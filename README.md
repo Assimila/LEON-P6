@@ -55,16 +55,18 @@ Create a robust **Forest_2020** baseline combining structural (tree density), la
 **Notebook:** `2_deforestation_tracker.ipynb`
 
 ### Summary of Method
-- Multi‑temporal **speckle filtering** of Sentinel‑1 GRD time series  
-- Compute **temporal variability metrics** (CV, divergence)  
+- Download **Sentinel‑1 VH polarisation time series** for the AOI,  
+  **downsampled to 30 m** to reduce noise and stabilise the temporal signal.
+- Apply **multi‑temporal and spatial speckle filtering** to the GRD stack.  
+- Compute **temporal variability metrics**  
 - **Logistic curve fitting** to detect breakpoints  
 - Produce **continuous date of disturbance** (e.g., 2021.45, 2023.88)  
 - Extract **integer deforestation year** (`floor(value)`)  
 - Generate **deforestation mask** (2020–2024)
 
 ### Outputs
-- `s1_deforestation_year_20-24.tif` *(float32, 10 m)*
-- `s1_deforestation_mask_20-24.tif` *(uint8, 10 m)*
+- `s1_deforestation_year_20-24.tif` *(float32, 30 m)*
+- `s1_deforestation_mask_20-24.tif` *(uint8, 30 m)*
 
 ---
 
