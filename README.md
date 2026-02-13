@@ -16,6 +16,7 @@ All spatial outputs use **EPSG:32636 (UTM Zone 36N)**.
 ```txt
 .
 ├── environment.yml
+├── 0_download_crops_gee.js
 ├── 0_download_lc_esri_gee.js
 ├── 0_download_natural_forest_gee.js
 ├── 1_forest_baseline.ipynb
@@ -113,6 +114,17 @@ Annual canopy height maps (50 m, COG, 2020–2024):
 - `meancrops_24-25_32636.tif` (crop probability; cropland = >0.1)
 
 ### KPIs (per county)
+### Inputs
+- **MeanCrops 24-25**  
+  Download using GEE script: `0_download_crops_gee.js`
+  - `meancrops_24-25_32636.tif` 
+- **Forest baseline (2020)**  
+  from Step 1:  
+  - `forest_extent_2020_32636.tif`
+- **S1 Deforestation Date**  
+  from Step 3:
+  - `s1_deforestation_year_20-24.tif`
+
 #### KPI 0 — Forest Baseline (ha)
 `Forest_2020_ha`
 
