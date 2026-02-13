@@ -105,16 +105,15 @@ Annual canopy height maps (50 m, COG, 2020–2024):
 ---
 
 ## 4) KPI Computation
+### KPIs (per county)
 
 **Notebook:** `4_kpi.ipynb`
 
 ### Inputs
-- `forest_extent_2020_32636.tif` (10 m)
-- `s1_deforestation_year_20-24.tif` (float32; floor → 2021–2024)
-- `meancrops_24-25_32636.tif` (crop probability; cropland = >0.1)
-
-### KPIs (per county)
-### Inputs
+- **Administrative boundaries**
+  Administrative boundaries can be accessed via Humanitarian Data -> https://data.humdata.org/dataset/cod-ab-uga
+  In this example we are using adm4 counties Kabwoya and Kyangwali enclosing Bugoma Nationalpark in Uganda
+  - `counties_bugoma_cut_32636.gpkg`
 - **MeanCrops 24-25**  
   Download using GEE script: `0_download_crops_gee.js`
   - `meancrops_24-25_32636.tif` 
