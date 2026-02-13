@@ -111,7 +111,7 @@ Annual canopy height maps (50 m, COG, 2020–2024):
 
 ### Inputs
 - **Administrative boundaries**
-  Administrative boundaries can be accessed via Humanitarian Data -> https://data.humdata.org/dataset/cod-ab-uga
+  Administrative boundaries can be accessed \ via Humanitarian Data -> https://data.humdata.org/dataset/cod-ab-uga \
   In this example we are using adm4 counties Kabwoya and Kyangwali enclosing Bugoma Nationalpark in Uganda
   - `counties_bugoma_cut_32636.gpkg`
 - **MeanCrops 24-25**  
