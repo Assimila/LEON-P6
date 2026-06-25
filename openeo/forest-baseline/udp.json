@@ -451,7 +451,7 @@
   "summary": "summary",
   "description": "description",
   "returns": {
-    "description": "A data cube pixel mask. 1 = forest, 0 = non-forest.",
+    "description": "A pixel mask. 1 = natural forest, 0 = non-forest.",
     "schema": {
       "type": "object",
       "subtype": "datacube"
