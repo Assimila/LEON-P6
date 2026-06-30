@@ -6,20 +6,25 @@ It targets the "python" runtime, version 3.11.
 https://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python
 """
 
+import math
 from typing import TypedDict
 
 import numpy as np
-from openeo.udf import inspect
 import scipy
 import xarray as xr
 
+from openeo.udf import inspect
 
 LOG_CODE = "connectivity mask"
 
 
 class Context(TypedDict):
-    # minimum number of connected pixels
-    min_pixels: int
+    # pixel area (units: m^2)
+    # I can't find a way to access this information within the UDF
+    pixel_area: float
+
+    # min connected area (units: m^2)
+    min_connected_area: float
 
 
 def format_bytes(bytes_val: float) -> str:
@@ -109,11 +114,25 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
 
     # parse and validate context
 
-    min_pixels = context["min_pixels"]
-    if not isinstance(min_pixels, int):
-        raise ValueError("radius should be an integer")
+    pixel_area = context["pixel_area"]
+    if not isinstance(pixel_area, float | int):
+        raise TypeError("pixel_area should be a float")
+    if pixel_area <= 0:
+        raise ValueError("pixel_area should be positive")
+
+    min_connected_area = context["min_connected_area"]
+    if not isinstance(min_connected_area, float | int):
+        raise TypeError("min_connected_area should be a float")
+    if min_connected_area < 0:
+        raise ValueError("min_connected_area should be positive")
+
+    min_pixels = math.ceil(min_connected_area / pixel_area)
     if min_pixels < 1:
         raise ValueError("min_pixels should be at least 1")
+
+    inspect(
+        message=f"Applying connectivity mask with min_pixels = {min_pixels}", code=LOG_CODE, level="debug"
+    )
 
     mask = xr.apply_ufunc(
         small_region_mask,
@@ -122,6 +141,11 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
         output_core_dims=[["y", "x"]],
         vectorize=True,
         kwargs=dict(min_pixels=min_pixels),
+    )
+
+    returned_dtype = mask.dtype
+    inspect(
+        message=f"returned dtype = {returned_dtype}", code=LOG_CODE, level="debug"
     )
 
     return mask
