@@ -15,7 +15,7 @@ import xarray as xr
 
 from openeo.udf import inspect
 
-LOG_CODE = "connectivity mask"
+LOG_CODE = "connectivity_mask"
 
 
 class Context(TypedDict):
