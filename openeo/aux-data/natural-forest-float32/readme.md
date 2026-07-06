@@ -1,6 +1,6 @@
 The original natural forest dataset, provided to me by Georg, is a uint8 raster.
 
-It seems that openEO does not actually ready the stac metadata for `data_type`, `nodata`, `scale`, `offset`!!
+It seems that openEO does not actually read the stac metadata for `data_type`, `nodata`, `scale`, `offset`!!
 https://github.com/Open-EO/openeo-geotrellis-extensions/issues/658
 
 This causes really tricky bugs downstream.
