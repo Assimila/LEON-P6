@@ -21,14 +21,6 @@ class Context(TypedDict):
     argument: float | int
 
 
-def format_bytes(bytes_val: float) -> str:
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if bytes_val < 1024:
-            return f"{bytes_val:.2f} {unit}"
-        bytes_val /= 1024
-    return f"{bytes_val:.2f} PB"
-
-
 OPERATORS = {
     "gte": np.greater_equal,
     "gt": np.greater,
