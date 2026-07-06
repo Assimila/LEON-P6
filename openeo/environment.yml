@@ -28,4 +28,5 @@ dependencies:
   - rio-stac
   - rio-cogeo
   - s3cmd
+  - nbstripout
 prefix: /home/sam/miniconda3/envs/LEON-P6
