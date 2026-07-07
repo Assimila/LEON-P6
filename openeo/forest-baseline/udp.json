@@ -54,6 +54,15 @@
         "url": "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural-forest-float32/item.json"
       }
     },
+    "dropdimension1": {
+      "process_id": "drop_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "loadstac1"
+        },
+        "name": "t"
+      }
+    },
     "resamplecubespatial1": {
       "process_id": "resample_cube_spatial",
       "arguments": {
@@ -62,7 +71,7 @@
         },
         "method": "near",
         "target": {
-          "from_node": "loadstac1"
+          "from_node": "dropdimension1"
         }
       }
     },
@@ -146,7 +155,7 @@
         },
         "method": "near",
         "target": {
-          "from_node": "loadstac1"
+          "from_node": "dropdimension1"
         }
       }
     },
@@ -183,7 +192,7 @@
                   "from_parameter": "x"
                 },
                 "runtime": "Python",
-                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"binary_operator\"\n\n\nclass Context(TypedDict):\n    operator: str\n    argument: float | int\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\nOPERATORS = {\n    \"gte\": np.greater_equal,\n    \"gt\": np.greater,\n    \"lte\": np.less_equal,\n    \"lt\": np.less,\n}\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a binary (2 argument) operator to a cube.\n\n    Example:\n\n    ```\n    context.operator = \"gte\"\n    context.argument = 30\n    result = (cube >= 30)\n    ```\n\n    Why not just use native openEO processes?\n    Because there seems to be a bug related to Parameters.\n    https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3\n\n    Arguments:\n        cube: xarray Dataset\n        context: user-provided arguments.\n    \"\"\"\n    # parse and validate context\n    operator_name = context[\"operator\"]\n    try:\n        operator = OPERATORS[operator_name]\n    except KeyError:\n        raise ValueError(f\"Invalid operator: {operator_name}\")\n\n    argument = context[\"argument\"]\n    if not isinstance(argument, float | int):\n        raise TypeError(f\"Invalid argument: {argument}\")\n\n    inspect(\n        message=f\"applying {operator_name}(cube, {argument})\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return operator(cube, argument)\n",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"binary_operator\"\n\n\nclass Context(TypedDict):\n    operator: str\n    argument: float | int\n\n\nOPERATORS = {\n    \"gte\": np.greater_equal,\n    \"gt\": np.greater,\n    \"lte\": np.less_equal,\n    \"lt\": np.less,\n}\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a binary (2 argument) operator to a cube.\n\n    Example:\n\n    ```\n    context.operator = \"gte\"\n    context.argument = 30\n    result = (cube >= 30)\n    ```\n\n    Why not just use native openEO processes?\n    Because there seems to be a bug related to Parameters.\n    https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3\n\n    Arguments:\n        cube: xarray Dataset\n        context: user-provided arguments.\n    \"\"\"\n    # parse and validate context\n    operator_name = context[\"operator\"]\n    try:\n        operator = OPERATORS[operator_name]\n    except KeyError:\n        raise ValueError(f\"Invalid operator: {operator_name}\")\n\n    argument = context[\"argument\"]\n    if not isinstance(argument, float | int):\n        raise TypeError(f\"Invalid argument: {argument}\")\n\n    inspect(\n        message=f\"applying {operator_name}(cube, {argument})\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return operator(cube, argument)\n",
                 "version": "3.11"
               },
               "result": true
@@ -272,7 +281,7 @@
       "process_id": "apply",
       "arguments": {
         "data": {
-          "from_node": "loadstac1"
+          "from_node": "dropdimension1"
         },
         "process": {
           "process_graph": {
@@ -289,7 +298,7 @@
                   "from_parameter": "x"
                 },
                 "runtime": "Python",
-                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"binary_operator\"\n\n\nclass Context(TypedDict):\n    operator: str\n    argument: float | int\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\nOPERATORS = {\n    \"gte\": np.greater_equal,\n    \"gt\": np.greater,\n    \"lte\": np.less_equal,\n    \"lt\": np.less,\n}\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a binary (2 argument) operator to a cube.\n\n    Example:\n\n    ```\n    context.operator = \"gte\"\n    context.argument = 30\n    result = (cube >= 30)\n    ```\n\n    Why not just use native openEO processes?\n    Because there seems to be a bug related to Parameters.\n    https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3\n\n    Arguments:\n        cube: xarray Dataset\n        context: user-provided arguments.\n    \"\"\"\n    # parse and validate context\n    operator_name = context[\"operator\"]\n    try:\n        operator = OPERATORS[operator_name]\n    except KeyError:\n        raise ValueError(f\"Invalid operator: {operator_name}\")\n\n    argument = context[\"argument\"]\n    if not isinstance(argument, float | int):\n        raise TypeError(f\"Invalid argument: {argument}\")\n\n    inspect(\n        message=f\"applying {operator_name}(cube, {argument})\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return operator(cube, argument)\n",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"binary_operator\"\n\n\nclass Context(TypedDict):\n    operator: str\n    argument: float | int\n\n\nOPERATORS = {\n    \"gte\": np.greater_equal,\n    \"gt\": np.greater,\n    \"lte\": np.less_equal,\n    \"lt\": np.less,\n}\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a binary (2 argument) operator to a cube.\n\n    Example:\n\n    ```\n    context.operator = \"gte\"\n    context.argument = 30\n    result = (cube >= 30)\n    ```\n\n    Why not just use native openEO processes?\n    Because there seems to be a bug related to Parameters.\n    https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3\n\n    Arguments:\n        cube: xarray Dataset\n        context: user-provided arguments.\n    \"\"\"\n    # parse and validate context\n    operator_name = context[\"operator\"]\n    try:\n        operator = OPERATORS[operator_name]\n    except KeyError:\n        raise ValueError(f\"Invalid operator: {operator_name}\")\n\n    argument = context[\"argument\"]\n    if not isinstance(argument, float | int):\n        raise TypeError(f\"Invalid argument: {argument}\")\n\n    inspect(\n        message=f\"applying {operator_name}(cube, {argument})\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return operator(cube, argument)\n",
                 "version": "3.11"
               },
               "result": true
