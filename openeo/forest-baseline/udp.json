@@ -16,26 +16,13 @@
         ]
       }
     },
-    "reducedimension1": {
-      "process_id": "reduce_dimension",
+    "dropdimension1": {
+      "process_id": "drop_dimension",
       "arguments": {
         "data": {
           "from_node": "loadcollection1"
         },
-        "dimension": "t",
-        "reducer": {
-          "process_graph": {
-            "first1": {
-              "process_id": "first",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                }
-              },
-              "result": true
-            }
-          }
-        }
+        "name": "t"
       }
     },
     "loadstac1": {
@@ -54,7 +41,7 @@
         "url": "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural-forest-float32/item.json"
       }
     },
-    "dropdimension1": {
+    "dropdimension2": {
       "process_id": "drop_dimension",
       "arguments": {
         "data": {
@@ -67,11 +54,11 @@
       "process_id": "resample_cube_spatial",
       "arguments": {
         "data": {
-          "from_node": "reducedimension1"
+          "from_node": "dropdimension1"
         },
         "method": "near",
         "target": {
-          "from_node": "dropdimension1"
+          "from_node": "dropdimension2"
         }
       }
     },
@@ -125,37 +112,24 @@
         ]
       }
     },
-    "reducedimension2": {
-      "process_id": "reduce_dimension",
+    "dropdimension3": {
+      "process_id": "drop_dimension",
       "arguments": {
         "data": {
           "from_node": "loadcollection2"
         },
-        "dimension": "t",
-        "reducer": {
-          "process_graph": {
-            "first2": {
-              "process_id": "first",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                }
-              },
-              "result": true
-            }
-          }
-        }
+        "name": "t"
       }
     },
     "resamplecubespatial2": {
       "process_id": "resample_cube_spatial",
       "arguments": {
         "data": {
-          "from_node": "reducedimension2"
+          "from_node": "dropdimension3"
         },
         "method": "near",
         "target": {
-          "from_node": "dropdimension1"
+          "from_node": "dropdimension2"
         }
       }
     },
@@ -201,6 +175,15 @@
         }
       }
     },
+    "convertdatatype1": {
+      "process_id": "convert_data_type",
+      "arguments": {
+        "data": {
+          "from_node": "apply2"
+        },
+        "data_type": "bool"
+      }
+    },
     "mergecubes1": {
       "process_id": "merge_cubes",
       "arguments": {
@@ -208,7 +191,7 @@
           "from_node": "apply1"
         },
         "cube2": {
-          "from_node": "apply2"
+          "from_node": "convertdatatype1"
         },
         "overlap_resolver": {
           "process_graph": {
@@ -281,7 +264,7 @@
       "process_id": "apply",
       "arguments": {
         "data": {
-          "from_node": "dropdimension1"
+          "from_node": "dropdimension2"
         },
         "process": {
           "process_graph": {
@@ -307,6 +290,15 @@
         }
       }
     },
+    "convertdatatype2": {
+      "process_id": "convert_data_type",
+      "arguments": {
+        "data": {
+          "from_node": "apply4"
+        },
+        "data_type": "bool"
+      }
+    },
     "mergecubes3": {
       "process_id": "merge_cubes",
       "arguments": {
@@ -314,7 +306,7 @@
           "from_node": "mergecubes2"
         },
         "cube2": {
-          "from_node": "apply4"
+          "from_node": "convertdatatype2"
         },
         "overlap_resolver": {
           "process_graph": {
@@ -388,20 +380,30 @@
         ]
       }
     },
-    "apply5": {
-      "process_id": "apply",
+    "convertdatatype3": {
+      "process_id": "convert_data_type",
       "arguments": {
         "data": {
           "from_node": "applyneighborhood1"
         },
+        "data_type": "bool"
+      }
+    },
+    "apply5": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "convertdatatype3"
+        },
         "process": {
           "process_graph": {
-            "not1": {
-              "process_id": "not",
+            "eq2": {
+              "process_id": "eq",
               "arguments": {
                 "x": {
                   "from_parameter": "x"
-                }
+                },
+                "y": 0
               },
               "result": true
             }

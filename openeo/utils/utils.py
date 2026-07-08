@@ -86,3 +86,11 @@ def drop_hidden_dimension(cube: openeo.DataCube, name: str) -> openeo.DataCube:
             )
         else:
             raise
+
+
+def invert_mask(mask: openeo.DataCube) -> openeo.DataCube:
+    """
+    Workaround for https://forum.dataspace.copernicus.eu/t/invert-not-of-a-pixel-mask/5323
+    """
+    # applying `not` operator (~) after `merge_cubes` is broken
+    return (mask == 0)
