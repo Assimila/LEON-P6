@@ -113,8 +113,6 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
 
     mu = window.dot(kernel)
 
-    # normalised intensity
-
     eps = 1e-12
     if (abs(mu) < eps).any():
         inspect(
@@ -123,7 +121,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
             level="warning",
         )
 
-    # numerator
+    # numerator - normalised intensity
     ni = cube / mu
     # denominator
     inv_mu = 1.0 / mu

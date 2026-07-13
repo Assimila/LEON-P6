@@ -129,6 +129,9 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     min_pixels = math.ceil(min_connected_area / pixel_area)
     if min_pixels < 1:
         raise ValueError("min_pixels should be at least 1")
+    total_pixels = cube.sizes["y"] * cube.sizes["x"]
+    if min_pixels >= total_pixels:
+        raise ValueError("min_pixels should be less than or equal to the total number of pixels")
 
     inspect(
         message=f"Applying connectivity mask with min_pixels = {min_pixels}", code=LOG_CODE, level="debug"
