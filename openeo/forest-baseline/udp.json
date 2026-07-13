@@ -441,8 +441,8 @@
     }
   },
   "id": "forest_baseline",
-  "summary": "construct a natural forest baseline pixel mask for the year 2020",
-  "description": "construct a natural forest baseline pixel mask for the year 2020",
+  "summary": "Construct a natural forest baseline pixel mask for the year 2020. The returned DataCube has a single band named B0. ",
+  "description": "Construct a natural forest baseline pixel mask for the year 2020. The returned DataCube has a single band named B0. ",
   "returns": {
     "description": "A pixel mask. 1 = natural forest, 0 = non-forest.",
     "schema": {
