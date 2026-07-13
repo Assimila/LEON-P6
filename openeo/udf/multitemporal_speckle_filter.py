@@ -112,7 +112,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
 
     mu = window.dot(kernel)
 
-    # normalised intensity
+    # numerator - normalised intensity
 
     eps = 1e-12
     if (abs(mu) < eps).any():

@@ -77,9 +77,11 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
 
     # compute p05 and p95
     # these have dims (...)
-    # p05 = "LowLim"
-    p05 = cube.quantile(0.05, dim="t")
-    p95 = cube.quantile(0.95, dim="t")
+
+    # .quantile() adds a non-dimension coordinate "quantile", which we drop
+    p05 = cube.quantile(0.05, dim="t").drop_vars("quantile")
+    p95 = cube.quantile(0.95, dim="t").drop_vars("quantile")
+
     # amplitude
     k = p95 - p05
 
