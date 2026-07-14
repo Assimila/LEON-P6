@@ -18,8 +18,7 @@ LOG_CODE = "nearest_neighbour_fill"
 
 
 class Context(TypedDict):
-    # the value which indicates a pixel that should be filled
-    sentinel: int | float
+    pass
 
 
 def format_bytes(bytes_val: float) -> str:
@@ -30,30 +29,26 @@ def format_bytes(bytes_val: float) -> str:
     return f"{bytes_val:.2f} PB"
 
 
-def nearest_neighbour_fill(
-    input_array: np.ndarray, sentinel: int | float
-) -> np.ndarray:
+def nearest_neighbour_fill(data: np.ndarray, mask: np.ndarray) -> np.ndarray:
     """
     Arguments:
-        input_array: numpy array. should have 2 dimensions only.
-        sentinel: the value which indicates a pixel that should be filled
+        data: numpy array with 2 dimensions only.
+        mask: numpy array with 2 dimensions only.
+            Truthy values indicate pixels that should be filled.
     """
-    if input_array.ndim != 2:
-        raise ValueError("input_array should have 2 dimensions only")
+    if data.ndim != 2:
+        raise ValueError("data should have 2 dimensions only")
+    if mask.ndim != 2:
+        raise ValueError("mask should have 2 dimensions only")
 
-    # look for values of `sentinel` in `input_array`
-    if np.isnan(sentinel):
-        # special case because NaN != NaN
-        sentinel_mask = np.isnan(input_array)
-    else:
-        sentinel_mask = input_array == sentinel
+    mask_bool = mask.astype(bool)
 
-    if not sentinel_mask.any():
+    if not mask_bool.any():
         # early return
-        return input_array
+        return data.copy()
 
     # get a mask of finite valued pixels that can be used for replacement
-    candidate_mask = np.isfinite(input_array) & ~sentinel_mask
+    candidate_mask = np.isfinite(data) & ~mask_bool
 
     if not candidate_mask.any():
         raise ValueError("no finite valued pixels available for replacement")
@@ -68,31 +63,35 @@ def nearest_neighbour_fill(
     )
 
     # nearest_coords is a tuple of coordinate arrays, one per axis.
-    # Each array has the same shape as input_array.
+    # Each array has the same shape as data.
     # For pixel (i, j), the index of the nearest candidate is (II[i, j], JJ[i, j]).
     II, JJ = nearest_coords
 
-    output = input_array.copy()
-    # For each sentinel pixel, copy the value from its nearest candidate.
-    output[sentinel_mask] = input_array[II[sentinel_mask], JJ[sentinel_mask]]
+    output = data.copy()
+    # For each masked pixel, copy the value from its nearest candidate.
+    output[mask_bool] = data[II[mask_bool], JJ[mask_bool]]
     return output
 
 
 def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     """
-    Look for values of `sentinel` in `cube`.
-    Replace these with the value of the spatially nearest finite valued pixel.
+    Fill masked pixels with the value of the spatially nearest finite valued pixel.
     If multiple pixels are equally close, one of these is chosen.
 
-    If there are no occurances of `sentinel`, return the input cube unchanged (noop).
+    The input cube must have 2 bands:
+        - band 0: data layer (any label)
+        - band 1: "mask" (truthy = pixel to fill)
 
-    If there are occurances of `sentinel`, but no finite valued pixels in the cube,
+    If there are masked pixels, but no finite valued pixels in the data band,
     raise an error.
 
     Arguments:
-        cube: xarray Dataset
-            Should have spatial dimensions "x" and "y".
+        cube: xarray DataArray
+            Should have spatial dimensions "x" and "y" and a "bands" dimension.
         context: user-provided arguments.
+
+    Returns:
+        2-band cube with filled data on band 0 and the mask band unchanged.
     """
     inspect(
         data=cube.sizes, message="Input cube dimensions", code=LOG_CODE, level="debug"
@@ -109,19 +108,29 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
         level="debug",
     )
 
-    # parse and validate context
+    # validate input bands
 
-    sentinel = context["sentinel"]
-    if not isinstance(sentinel, (int, float)):
-        raise TypeError("sentinel has unsupported type")
+    if "bands" not in cube.dims:
+        raise ValueError("cube must have a bands dimension")
+    if cube.sizes["bands"] != 2:
+        raise ValueError("expected 2 bands: data and mask")
 
-    output = xr.apply_ufunc(
+    data = cube.isel(bands=0, drop=True)
+    try:
+        mask_band = cube.sel(bands="mask", drop=True)
+    except KeyError as e:
+        raise ValueError("expected band 1 to be labeled 'mask'") from e
+
+    filled_data = xr.apply_ufunc(
         nearest_neighbour_fill,
-        cube,
-        input_core_dims=[["y", "x"]],
+        data,
+        mask_band,
+        input_core_dims=[["y", "x"], ["y", "x"]],
         output_core_dims=[["y", "x"]],
         vectorize=True,
-        kwargs=dict(sentinel=sentinel),
     )
 
-    return output
+    # preserve band count: filled data + unchanged mask band
+    return xr.concat([filled_data, mask_band], dim="bands").assign_coords(
+        bands=cube.coords["bands"]
+    )
