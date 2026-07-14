@@ -5,136 +5,151 @@ import xarray as xr
 
 from udf import nearest_neighbour_fill
 
-SENTINEL = -999.0
+
+def make_cube(
+    data: np.ndarray,
+    mask: np.ndarray,
+    data_band: str = "VH",
+) -> xr.DataArray:
+    return xr.DataArray(
+        np.stack([data, mask]),
+        dims=["bands", "y", "x"],
+        coords={"bands": [data_band, "mask"]},
+    )
 
 
 class Test_nearest_neighbour_fill(unittest.TestCase):
-    def test_no_sentinels_unchanged(self):
-        input_array = np.array([[1.0, 2.0], [3.0, 4.0]])
-        input_xr = xr.DataArray(input_array, dims=["y", "x"])
+    def test_no_mask_unchanged(self):
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        mask = np.zeros((2, 2))
+        input_xr = make_cube(data, mask)
         expected = input_xr.copy()
 
-        output_xr = nearest_neighbour_fill.apply_datacube(
-            input_xr, {"sentinel": SENTINEL}
-        )
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
         xr.testing.assert_equal(output_xr, expected)
 
-    def test_fill_single_sentinel(self):
-        input_array = np.array([[5.0, SENTINEL]])
-        input_xr = xr.DataArray(input_array, dims=["y", "x"])
-        expected = xr.DataArray(np.array([[5.0, 5.0]]), dims=["y", "x"])
+    def test_fill_single_masked_pixel(self):
+        data = np.array([[5.0, 0.0]])
+        mask = np.array([[0.0, 1.0]])
+        input_xr = make_cube(data, mask)
+        expected = make_cube(np.array([[5.0, 5.0]]), mask)
 
-        output_xr = nearest_neighbour_fill.apply_datacube(
-            input_xr, {"sentinel": SENTINEL}
-        )
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
         xr.testing.assert_equal(output_xr, expected)
 
-    def test_fill_surrounded_sentinel(self):
-        input_array = np.array(
+    def test_fill_surrounded_masked_pixel(self):
+        data = np.array(
             [
                 [1.0, 1.0, 1.0],
-                [1.0, SENTINEL, 1.0],
+                [1.0, 0.0, 1.0],
                 [1.0, 1.0, 1.0],
             ]
         )
-        input_xr = xr.DataArray(input_array, dims=["y", "x"])
-        expected = xr.DataArray(np.ones((3, 3)), dims=["y", "x"])
-
-        output_xr = nearest_neighbour_fill.apply_datacube(
-            input_xr, {"sentinel": SENTINEL}
+        mask = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ]
         )
+        input_xr = make_cube(data, mask)
+        expected = make_cube(np.ones((3, 3)), mask)
+
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
         xr.testing.assert_equal(output_xr, expected)
 
-    def test_fill_all_sentinels_one_candidate(self):
-        input_array = np.array(
+    def test_fill_all_masked_one_candidate(self):
+        data = np.array(
             [
-                [SENTINEL, SENTINEL],
-                [SENTINEL, 7.0],
+                [0.0, 0.0],
+                [0.0, 7.0],
             ]
         )
-        input_xr = xr.DataArray(input_array, dims=["y", "x"])
-        expected = xr.DataArray(np.full((2, 2), 7.0), dims=["y", "x"])
-
-        output_xr = nearest_neighbour_fill.apply_datacube(
-            input_xr, {"sentinel": SENTINEL}
+        mask = np.array(
+            [
+                [1.0, 1.0],
+                [1.0, 0.0],
+            ]
         )
+        input_xr = make_cube(data, mask)
+        expected = make_cube(np.full((2, 2), 7.0), mask)
+
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
         xr.testing.assert_equal(output_xr, expected)
 
     def test_fill_closest_of_multiple_candidates(self):
+        data = np.array([[5.0, np.nan, np.nan, 0.0, np.nan, 10.0]])
+        mask = np.array([[0.0, 0.0, 0.0, 1.0, 0.0, 0.0]])
+        input_xr = make_cube(data, mask)
+        expected_arr = np.array([[5.0, np.nan, np.nan, 10.0, np.nan, 10.0]])
+        expected = make_cube(expected_arr, mask)
 
-        input_array = np.array(
-            [
-                [5.0, np.nan, np.nan, SENTINEL, np.nan, 10.0],
-            ]
-        )
-        input_xr = xr.DataArray(input_array, dims=["y", "x"])
-        expected_arr = np.array(
-            [
-                [5.0, np.nan, np.nan, 10.0, np.nan, 10.0],
-            ]
-        )
-        expected = xr.DataArray(expected_arr, dims=["y", "x"])
-
-        output_xr = nearest_neighbour_fill.apply_datacube(
-            input_xr, {"sentinel": SENTINEL}
-        )
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
         xr.testing.assert_equal(output_xr, expected)
 
     def test_no_candidates_raises(self):
-        input_array = np.full((2, 2), SENTINEL)
-        input_xr = xr.DataArray(input_array, dims=["y", "x"])
+        data = np.zeros((2, 2))
+        mask = np.ones((2, 2))
+        input_xr = make_cube(data, mask)
 
         with self.assertRaisesRegex(
             ValueError, "no finite valued pixels available for replacement"
         ):
-            nearest_neighbour_fill.apply_datacube(input_xr, {"sentinel": SENTINEL})
+            nearest_neighbour_fill.apply_datacube(input_xr, {})
 
-    def test_sentinel_wrong_type(self):
-        input_xr = xr.DataArray(np.array([[1.0, SENTINEL]]), dims=["y", "x"])
+    def test_wrong_band_count_raises(self):
+        input_xr = xr.DataArray(
+            np.ones((1, 2, 2)),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["VH"]},
+        )
 
-        for sentinel in ("0", None):
-            with self.subTest(sentinel=sentinel):
-                with self.assertRaises(TypeError):
-                    nearest_neighbour_fill.apply_datacube(
-                        input_xr, {"sentinel": sentinel}
-                    )
+        with self.assertRaisesRegex(ValueError, "expected 2 bands"):
+            nearest_neighbour_fill.apply_datacube(input_xr, {})
+
+    def test_missing_bands_dimension_raises(self):
+        input_xr = xr.DataArray(np.ones((2, 2)), dims=["y", "x"])
+
+        with self.assertRaisesRegex(ValueError, "bands dimension"):
+            nearest_neighbour_fill.apply_datacube(input_xr, {})
+
+    def test_mask_band_without_label_raises(self):
+        data = np.array([[5.0, 0.0]])
+        mask = np.array([[0.0, 1.0]])
+        input_xr = xr.DataArray(
+            np.stack([data, mask]),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["VH", 1]},
+        )
+
+        with self.assertRaises(ValueError):
+            nearest_neighbour_fill.apply_datacube(input_xr, {})
 
     def test_invalid_ndim(self):
         with self.assertRaisesRegex(ValueError, "2 dimensions only"):
             nearest_neighbour_fill.nearest_neighbour_fill(
-                np.array([1.0, SENTINEL]), SENTINEL
+                np.array([1.0, 0.0]), np.array([0.0, 1.0])
             )
 
-    def test_nan_sentinel(self):
-        input_array = np.array(
+    def test_non_masked_nan_unchanged(self):
+        data = np.array(
             [
                 [1.0, np.nan],
-                [np.nan, 1.0],
+                [0.0, 1.0],
             ]
         )
-        output = nearest_neighbour_fill.nearest_neighbour_fill(input_array, np.nan)
-        expected = np.array(
+        mask = np.array(
             [
-                [1.0, 1.0],
-                [1.0, 1.0],
+                [0.0, 0.0],
+                [1.0, 0.0],
             ]
         )
-
-        np.testing.assert_array_equal(output, expected)
-
-    def test_non_sentinel_nan_unchanged(self):
-        input_array = np.array(
-            [
-                [1.0, np.nan],
-                [SENTINEL, 1.0],
-            ]
-        )
-        output = nearest_neighbour_fill.nearest_neighbour_fill(input_array, SENTINEL)
+        output = nearest_neighbour_fill.nearest_neighbour_fill(data, mask)
         expected = np.array(
             [
                 [1.0, np.nan],
@@ -145,34 +160,36 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
         np.testing.assert_array_equal(output, expected)
 
     def test_extra_dims(self):
-        slice0 = np.array(
-            [
-                [1.0, SENTINEL],
-                [3.0, 1.0],
-            ]
-        )
-        slice1 = np.array(
-            [
-                [1.0, 2.0],
-                [3.0, 4.0],
-            ]
-        )
+        data0 = np.array([[1.0, 0.0], [3.0, 1.0]])
+        mask0 = np.array([[0.0, 1.0], [0.0, 0.0]])
+        data1 = np.array([[1.0, 2.0], [3.0, 4.0]])
+        mask1 = np.zeros((2, 2))
         input_xr = xr.DataArray(
-            np.stack([slice0, slice1]),
-            dims=["t", "y", "x"],
+            np.stack(
+                [
+                    np.stack([data0, data1]),
+                    np.stack([mask0, mask1]),
+                ]
+            ),
+            dims=["bands", "t", "y", "x"],
+            coords={"t": [0, 1], "bands": ["VH", "mask"]},
         )
         expected = xr.DataArray(
             np.stack(
                 [
-                    np.array([[1.0, 1.0], [3.0, 1.0]]),
-                    slice1,
+                    np.stack(
+                        [
+                            np.array([[1.0, 1.0], [3.0, 1.0]]),
+                            data1,
+                        ]
+                    ),
+                    np.stack([mask0, mask1]),
                 ]
             ),
-            dims=["t", "y", "x"],
+            dims=["bands", "t", "y", "x"],
+            coords={"t": [0, 1], "bands": ["VH", "mask"]},
         )
 
-        output_xr = nearest_neighbour_fill.apply_datacube(
-            input_xr, {"sentinel": SENTINEL}
-        )
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
         xr.testing.assert_equal(output_xr, expected)
