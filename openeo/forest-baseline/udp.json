@@ -391,6 +391,166 @@
         "label": "B0",
         "name": "bands",
         "type": "bands"
+      }
+    },
+    "renamelabels6": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "adddimension1"
+        },
+        "dimension": "bands",
+        "target": [
+          "forest_baseline"
+        ]
+      }
+    },
+    "applyneighborhood1": {
+      "process_id": "apply_neighborhood",
+      "arguments": {
+        "data": {
+          "from_node": "adddimension1"
+        },
+        "overlap": [
+          {
+            "dimension": "x",
+            "value": 32,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 32,
+            "unit": "px"
+          }
+        ],
+        "process": {
+          "process_graph": {
+            "runudf3": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "pixel_area": 100,
+                  "min_connected_area": {
+                    "from_parameter": "min_connected_area"
+                  }
+                },
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nimport math\nfrom typing import TypedDict\n\nimport numpy as np\nimport scipy\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"connectivity_mask\"\n\n\nclass Context(TypedDict):\n    # pixel area (units: m^2)\n    # I can't find a way to access this information within the UDF\n    pixel_area: float\n\n    # min connected area (units: m^2)\n    min_connected_area: float\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef small_region_mask(input_array: np.ndarray, min_pixels: int) -> np.ndarray:\n    \"\"\"\n    Use scipy.ndimage.label to detect features (clusters of non-zero valued pixels).\n\n    Arguments:\n        input_array: a 2D (spatial) boolean array / mask.\n            1 = valid pixel. 0 = ignored pixel.\n        min_pixels: once clustered into features, exclude features smaller than min_pixels\n\n    Returns:\n        a boolean mask of pixels to exclude, based on a minimum feature size.\n        1 = excluded pixel.\n    \"\"\"\n    if input_array.dtype != bool:\n        raise TypeError(\"input_array must have dtype bool\")\n    if min_pixels < 1:\n        raise ValueError(\"min_pixels must be 1 or greater\")\n\n    # 8-connectivity (diagonals count)\n    structure = np.ones((3, 3))\n\n    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.label.html#scipy.ndimage.label\n    # labelled_features has same shape as input_array.\n    # with clusters of pixels labelled by feature id (integer).\n    # feature id 0 = pixels not belonging to a feature, because their value in input_array is 0.\n    # the first cluster of pixels has feature id = 1.\n    labelled_features, _ = scipy.ndimage.label(input_array, structure=structure)\n\n    # 1D array.\n    # label_counts[i] is number of pixels with feature id = i.\n    label_counts = np.bincount(labelled_features.ravel())\n\n    # map each feature id to a bool (whether it should be masked).\n    # label_masked[i] is whether to mask feature id = i.\n    labels_masked = label_counts < min_pixels\n\n    # do not mask feature id = 0\n    labels_masked[0] = False\n\n    # numpy Integer array indexing https://numpy.org/doc/stable/user/basics.indexing.html#integer-array-indexing\n    # for each pixel in labelled_features (pixel value = feature id)\n    # do a positional lookup from labels_masked,\n    # essentially mapping from feature id to the corresponding true/false from labels_masked.\n    # mask has same shape as labelled_features, which has same shape as input_array\n    mask = labels_masked[labelled_features]\n\n    return mask\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Generate a mask based on pixel connectivity.\n    In the returned mask, pixels with value = 1 correspond to features smaller than min_pixels,\n    which should be excluded.\n\n    Arguments:\n        cube: xarray Dataset\n            Should have spatial dimensions \"x\" and \"y\".\n            Should be a mask of dtype bool.\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    if cube.dtype != bool:\n        inspect(\n            message=f\"expected dtype bool, got dtype {cube.dtype}\", code=LOG_CODE, level=\"warning\"\n        )\n        # try to convert from float\n        cube = cube.notnull() & (cube != 0)\n\n    # parse and validate context\n\n    pixel_area = context[\"pixel_area\"]\n    if not isinstance(pixel_area, float | int):\n        raise TypeError(\"pixel_area should be a float\")\n    if pixel_area <= 0:\n        raise ValueError(\"pixel_area should be positive\")\n\n    min_connected_area = context[\"min_connected_area\"]\n    if not isinstance(min_connected_area, float | int):\n        raise TypeError(\"min_connected_area should be a float\")\n    if min_connected_area < 0:\n        raise ValueError(\"min_connected_area should be positive\")\n\n    min_pixels = math.ceil(min_connected_area / pixel_area)\n    if min_pixels < 1:\n        raise ValueError(\"min_pixels should be at least 1\")\n    total_pixels = cube.sizes[\"y\"] * cube.sizes[\"x\"]\n    if min_pixels >= total_pixels:\n        raise ValueError(\"min_pixels should be less than or equal to the total number of pixels\")\n\n    inspect(\n        message=f\"Applying connectivity mask with min_pixels = {min_pixels}\", code=LOG_CODE, level=\"debug\"\n    )\n\n    mask = xr.apply_ufunc(\n        small_region_mask,\n        cube,\n        input_core_dims=[[\"y\", \"x\"]],\n        output_core_dims=[[\"y\", \"x\"]],\n        vectorize=True,\n        kwargs=dict(min_pixels=min_pixels),\n    )\n\n    returned_dtype = mask.dtype\n    inspect(\n        message=f\"returned dtype = {returned_dtype}\", code=LOG_CODE, level=\"debug\"\n    )\n\n    return mask\n",
+                "version": "3.11"
+              },
+              "result": true
+            }
+          }
+        },
+        "size": [
+          {
+            "dimension": "x",
+            "value": 256,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 256,
+            "unit": "px"
+          }
+        ]
+      }
+    },
+    "convertdatatype3": {
+      "process_id": "convert_data_type",
+      "arguments": {
+        "data": {
+          "from_node": "applyneighborhood1"
+        },
+        "data_type": "bool"
+      }
+    },
+    "renamelabels7": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "convertdatatype3"
+        },
+        "dimension": "bands",
+        "target": [
+          "small_region_mask"
+        ]
+      }
+    },
+    "mergecubes5": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "renamelabels6"
+        },
+        "cube2": {
+          "from_node": "renamelabels7"
+        }
+      }
+    },
+    "reducedimension2": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "mergecubes5"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement5": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "index": 0
+              }
+            },
+            "arrayelement6": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "index": 1
+              }
+            },
+            "not1": {
+              "process_id": "not",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement6"
+                }
+              }
+            },
+            "and4": {
+              "process_id": "and",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement5"
+                },
+                "y": {
+                  "from_node": "not1"
+                }
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "adddimension2": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension2"
+        },
+        "label": "B0",
+        "name": "bands",
+        "type": "bands"
       },
       "result": true
     }
