@@ -91,7 +91,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     which should be excluded.
 
     Arguments:
-        cube: xarray Dataset
+        cube: xarray DataArray
             Should have spatial dimensions "x" and "y".
             Should be a mask of dtype bool.
         context: user-provided arguments.

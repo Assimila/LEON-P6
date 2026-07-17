@@ -46,7 +46,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3
 
     Arguments:
-        cube: xarray Dataset
+        cube: xarray DataArray
         context: user-provided arguments.
     """
     # parse and validate context

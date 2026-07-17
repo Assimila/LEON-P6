@@ -33,7 +33,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     Convert from datetime to decimal year (float)
 
     Arguments:
-        cube: xarray Dataset.
+        cube: xarray DataArray.
             dims (t, ...) where "..." indicates other broadcast-able dimensions.
         context: user-provided arguments.
     """
