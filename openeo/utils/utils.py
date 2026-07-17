@@ -56,8 +56,10 @@ def percentile_cube(
         # target_dimension = "result",
     )
 
-    # Experimental openEO process
-    # based on https://github.com/Open-EO/openeo-community-examples/blob/49033e3709be1d709bd5b0a918e94c1833964f6e/python/RankComposites/utils_BAP.py#L25
+    # vector_to_raster is an "experimental" openEO process.
+    # This implementation is based on
+    # https://github.com/Open-EO/openeo-community-examples/blob/49033e3709be1d709bd5b0a918e94c1833964f6e/python/RankComposites/utils_BAP.py#L25
+    # There is a known issue where metadata is not set correctly client side (openeo version 0.50.0)
     percentile_datacube = percentile_vectorcube.vector_to_raster(cube)
 
     return percentile_datacube
@@ -75,22 +77,24 @@ def drop_hidden_dimension(cube: openeo.DataCube, name: str) -> openeo.DataCube:
     """
     Workaround for https://forum.dataspace.copernicus.eu/t/load-stac-time-dimension-hidden/5312
     """
-    try:
-        cube.drop_dimension(name)
-    except ValueError as e:
-        if e.args[0].startswith("No dimension named"):
-            return cube.process(
-                process_id="drop_dimension",
-                arguments={"data": cube, "name": name},
-                metadata=cube.metadata or None,
-            )
-        else:
-            raise
+    if cube.metadata and name in cube.metadata.dimension_names():
+        raise ValueError(f"Dimension {name} is not hidden")
+    return cube.process(
+        process_id="drop_dimension",
+        arguments={"data": cube, "name": name},
+        metadata=cube.metadata or None,
+    )
 
 
-def invert_mask(mask: openeo.DataCube) -> openeo.DataCube:
+def logical_not(cube: openeo.DataCube) -> openeo.DataCube:
     """
-    Workaround for https://forum.dataspace.copernicus.eu/t/invert-not-of-a-pixel-mask/5323
+    There appear to be many situations where the datatype of a boolean cube
+    is actually something else, or is interpreted as something else.
+
+    There appears to be no client-side access to the actual backend datatype.
+
+    When such a situation occurs, the logical not operation is incorrectly applied as a bitwise not!
+
+    https://forum.dataspace.copernicus.eu/t/invert-not-of-a-pixel-mask/5323
     """
-    # applying `not` operator (~) after `merge_cubes` is broken
-    return (mask == 0)
+    return (cube == 0)
