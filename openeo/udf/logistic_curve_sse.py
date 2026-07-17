@@ -40,7 +40,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     This is kind of like a convolution, where we calculate sum squared error at each time.
 
     Arguments:
-        cube: xarray Dataset.
+        cube: xarray DataArray.
             dims (t, ...) where "..." indicates other broadcast-able dimensions.
             Temporal dimension "t" of size at least `window`.
 

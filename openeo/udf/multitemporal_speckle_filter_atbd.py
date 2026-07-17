@@ -47,7 +47,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     with an overlap of at least `radius` pixels on each side.
 
     Arguments:
-        cube: xarray Dataset
+        cube: xarray DataArray
             Should have spatial dimensions "x" and "y" of size at least (2 * `radius` + 1).
             And temporal dimension "t" of size at least `window`.
         context: user-provided arguments.
