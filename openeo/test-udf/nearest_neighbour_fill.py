@@ -9,12 +9,11 @@ from udf import nearest_neighbour_fill
 def make_cube(
     data: np.ndarray,
     mask: np.ndarray,
-    data_band: str = "VH",
 ) -> xr.DataArray:
     return xr.DataArray(
         np.stack([data, mask]),
         dims=["bands", "y", "x"],
-        coords={"bands": [data_band, "mask"]},
+        coords={"bands": ["data", "mask"]},
     )
 
 
@@ -23,7 +22,11 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
         data = np.array([[1.0, 2.0], [3.0, 4.0]])
         mask = np.zeros((2, 2))
         input_xr = make_cube(data, mask)
-        expected = input_xr.copy()
+        expected = xr.DataArray(
+            np.stack([data]),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data"]},
+        )
 
         output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
@@ -33,7 +36,11 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
         data = np.array([[5.0, 0.0]])
         mask = np.array([[0.0, 1.0]])
         input_xr = make_cube(data, mask)
-        expected = make_cube(np.array([[5.0, 5.0]]), mask)
+        expected = xr.DataArray(
+            np.array([[[5.0, 5.0]]]),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data"]},
+        )
 
         output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
@@ -55,7 +62,11 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
             ]
         )
         input_xr = make_cube(data, mask)
-        expected = make_cube(np.ones((3, 3)), mask)
+        expected = xr.DataArray(
+            np.ones((1, 3, 3)),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data"]},
+        )
 
         output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
@@ -75,7 +86,11 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
             ]
         )
         input_xr = make_cube(data, mask)
-        expected = make_cube(np.full((2, 2), 7.0), mask)
+        expected = xr.DataArray(
+            np.full((1, 2, 2), 7.0),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data"]},
+        )
 
         output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
@@ -85,8 +100,11 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
         data = np.array([[5.0, np.nan, np.nan, 0.0, np.nan, 10.0]])
         mask = np.array([[0.0, 0.0, 0.0, 1.0, 0.0, 0.0]])
         input_xr = make_cube(data, mask)
-        expected_arr = np.array([[5.0, np.nan, np.nan, 10.0, np.nan, 10.0]])
-        expected = make_cube(expected_arr, mask)
+        expected = xr.DataArray(
+            np.array([[[5.0, np.nan, np.nan, 10.0, np.nan, 10.0]]]),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data"]},
+        )
 
         output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
 
@@ -106,7 +124,7 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
         input_xr = xr.DataArray(
             np.ones((1, 2, 2)),
             dims=["bands", "y", "x"],
-            coords={"bands": ["VH"]},
+            coords={"bands": ["data"]},
         )
 
         with self.assertRaisesRegex(ValueError, "expected 2 bands"):
@@ -118,16 +136,28 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "bands dimension"):
             nearest_neighbour_fill.apply_datacube(input_xr, {})
 
-    def test_mask_band_without_label_raises(self):
+    def test_missing_data_band_label_raises(self):
         data = np.array([[5.0, 0.0]])
         mask = np.array([[0.0, 1.0]])
         input_xr = xr.DataArray(
             np.stack([data, mask]),
             dims=["bands", "y", "x"],
-            coords={"bands": ["VH", 1]},
+            coords={"bands": ["whoops", "mask"]},
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "labeled 'data'"):
+            nearest_neighbour_fill.apply_datacube(input_xr, {})
+
+    def test_missing_mask_band_label_raises(self):
+        data = np.array([[5.0, 0.0]])
+        mask = np.array([[0.0, 1.0]])
+        input_xr = xr.DataArray(
+            np.stack([data, mask]),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data", "whoops"]},
+        )
+
+        with self.assertRaisesRegex(ValueError, "labeled 'mask'"):
             nearest_neighbour_fill.apply_datacube(input_xr, {})
 
     def test_invalid_ndim(self):
@@ -172,22 +202,19 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
                 ]
             ),
             dims=["bands", "t", "y", "x"],
-            coords={"t": [0, 1], "bands": ["VH", "mask"]},
+            coords={"t": [0, 1], "bands": ["data", "mask"]},
         )
         expected = xr.DataArray(
-            np.stack(
+            np.array(
                 [
-                    np.stack(
-                        [
-                            np.array([[1.0, 1.0], [3.0, 1.0]]),
-                            data1,
-                        ]
-                    ),
-                    np.stack([mask0, mask1]),
+                    [
+                        [[1.0, 1.0], [3.0, 1.0]],
+                        data1,
+                    ]
                 ]
             ),
             dims=["bands", "t", "y", "x"],
-            coords={"t": [0, 1], "bands": ["VH", "mask"]},
+            coords={"t": [0, 1], "bands": ["data"]},
         )
 
         output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})

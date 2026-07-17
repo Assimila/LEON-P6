@@ -11,6 +11,7 @@ from typing import TypedDict
 import numpy as np
 import scipy.ndimage
 from openeo.udf import inspect
+from openeo.metadata import CollectionMetadata
 import xarray as xr
 
 
@@ -78,9 +79,9 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     Fill masked pixels with the value of the spatially nearest finite valued pixel.
     If multiple pixels are equally close, one of these is chosen.
 
-    The input cube must have 2 bands:
-        - band 0: data layer (any label)
-        - band 1: "mask" (truthy = pixel to fill)
+    The input cube must have 2 bands labeled:
+        - "data": input data layer
+        - "mask": truthy = pixels to fill
 
     If there are masked pixels, but no finite valued pixels in the data band,
     raise an error.
@@ -91,7 +92,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
         context: user-provided arguments.
 
     Returns:
-        2-band cube with filled data on band 0 and the mask band unchanged.
+        Filled data array, dropping the "mask" band.
     """
     inspect(
         data=cube.sizes, message="Input cube dimensions", code=LOG_CODE, level="debug"
@@ -115,11 +116,14 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     if cube.sizes["bands"] != 2:
         raise ValueError("expected 2 bands: data and mask")
 
-    data = cube.isel(bands=0, drop=True)
+    try:
+        data = cube.sel(bands="data", drop=True)
+    except KeyError as e:
+        raise ValueError("expected a band labeled 'data'") from e
     try:
         mask_band = cube.sel(bands="mask", drop=True)
     except KeyError as e:
-        raise ValueError("expected band 1 to be labeled 'mask'") from e
+        raise ValueError("expected a band labeled 'mask'") from e
 
     filled_data = xr.apply_ufunc(
         nearest_neighbour_fill,
@@ -130,7 +134,11 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
         vectorize=True,
     )
 
-    # preserve band count: filled data + unchanged mask band
-    return xr.concat([filled_data, mask_band], dim="bands").assign_coords(
-        bands=cube.coords["bands"]
-    )
+    return filled_data.expand_dims(bands=["data"])
+
+
+def apply_metadata(metadata: CollectionMetadata, context: Context) -> CollectionMetadata:
+    """
+    Returns the expected cube metadata, after applying this UDF, based on input metadata.
+    """
+    return metadata.filter_bands(["data"])
