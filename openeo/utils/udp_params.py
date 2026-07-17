@@ -38,9 +38,8 @@ CANOPY_COVER_THRESHOLD = Parameter.number(
     description=(
         "Minimum canopy cover to be considered forest. "
         "Units: percent. "
-        "See collection CLMS_TCD_PANTROPICAL_10M_YEARLY_V1. "
-        "A value of 10 implies > 10% canopy cover. "
-        "A value of 20 implies > 20% canopy cover. "
+        "Should be one of (10, 20, 30, 40, 50, 60, 70, 80, 90). "
+        "A value of 30 implies > 30% canopy cover. "
     ),
     default=30,
 )
