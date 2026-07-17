@@ -1,0 +1,910 @@
+{
+  "process_graph": {
+    "filterspatial1": {
+      "process_id": "filter_spatial",
+      "arguments": {
+        "data": {
+          "from_parameter": "sentinel_1_datacube"
+        },
+        "geometries": {
+          "from_parameter": "spatial_extent"
+        }
+      }
+    },
+    "reducedimension1": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "filterspatial1"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement1": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "min_sse_t"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "filterbands1": {
+      "process_id": "filter_bands",
+      "arguments": {
+        "bands": [
+          "min_sse"
+        ],
+        "data": {
+          "from_node": "filterspatial1"
+        }
+      }
+    },
+    "filterspatial2": {
+      "process_id": "filter_spatial",
+      "arguments": {
+        "data": {
+          "from_parameter": "forest_baseline_datacube"
+        },
+        "geometries": {
+          "from_parameter": "spatial_extent"
+        }
+      }
+    },
+    "resamplecubespatial1": {
+      "process_id": "resample_cube_spatial",
+      "arguments": {
+        "data": {
+          "from_node": "filterspatial2"
+        },
+        "method": "near",
+        "target": {
+          "from_node": "filterspatial1"
+        }
+      }
+    },
+    "renamelabels1": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "resamplecubespatial1"
+        },
+        "dimension": "bands",
+        "target": [
+          "forest_baseline_mask"
+        ]
+      }
+    },
+    "filterbands2": {
+      "process_id": "filter_bands",
+      "arguments": {
+        "bands": [
+          "sd"
+        ],
+        "data": {
+          "from_node": "filterspatial1"
+        }
+      }
+    },
+    "apply1": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "filterbands2"
+        },
+        "process": {
+          "process_graph": {
+            "runudf1": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "operator": "gte",
+                  "argument": {
+                    "from_parameter": "temporal_variability_threshold"
+                  }
+                },
+                "data": {
+                  "from_parameter": "x"
+                },
+                "runtime": "Python",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"binary_operator\"\n\n\nclass Context(TypedDict):\n    operator: str\n    argument: float | int\n\n\nOPERATORS = {\n    \"gte\": np.greater_equal,\n    \"gt\": np.greater,\n    \"lte\": np.less_equal,\n    \"lt\": np.less,\n}\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a binary (2 argument) operator to a cube.\n\n    Example:\n\n    ```\n    context.operator = \"gte\"\n    context.argument = 30\n    result = (cube >= 30)\n    ```\n\n    Why not just use native openEO processes?\n    Because there seems to be a bug related to Parameters.\n    https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3\n\n    Arguments:\n        cube: xarray DataArray\n        context: user-provided arguments.\n    \"\"\"\n    # parse and validate context\n    operator_name = context[\"operator\"]\n    try:\n        operator = OPERATORS[operator_name]\n    except KeyError:\n        raise ValueError(f\"Invalid operator: {operator_name}\")\n\n    argument = context[\"argument\"]\n    if not isinstance(argument, float | int):\n        raise TypeError(f\"Invalid argument: {argument}\")\n\n    inspect(\n        message=f\"applying {operator_name}(cube, {argument})\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return operator(cube, argument)\n",
+                "version": "3.11"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "convertdatatype1": {
+      "process_id": "convert_data_type",
+      "arguments": {
+        "data": {
+          "from_node": "apply1"
+        },
+        "data_type": "bool"
+      }
+    },
+    "reducedimension2": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "convertdatatype1"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement2": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "sd"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "adddimension1": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension2"
+        },
+        "label": "temporal_variability_mask",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "mergecubes1": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "renamelabels1"
+        },
+        "cube2": {
+          "from_node": "adddimension1"
+        }
+      }
+    },
+    "reducedimension3": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "filterspatial1"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement3": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "p95"
+              }
+            },
+            "arrayelement4": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "p05"
+              }
+            },
+            "subtract1": {
+              "process_id": "subtract",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement3"
+                },
+                "y": {
+                  "from_node": "arrayelement4"
+                }
+              }
+            },
+            "absolute1": {
+              "process_id": "absolute",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement3"
+                }
+              }
+            },
+            "divide1": {
+              "process_id": "divide",
+              "arguments": {
+                "x": {
+                  "from_node": "subtract1"
+                },
+                "y": {
+                  "from_node": "absolute1"
+                }
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "adddimension2": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension3"
+        },
+        "label": "flattening",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "apply2": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "adddimension2"
+        },
+        "process": {
+          "process_graph": {
+            "runudf2": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "operator": "gte",
+                  "argument": {
+                    "from_parameter": "temporal_variability_threshold"
+                  }
+                },
+                "data": {
+                  "from_parameter": "x"
+                },
+                "runtime": "Python",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"binary_operator\"\n\n\nclass Context(TypedDict):\n    operator: str\n    argument: float | int\n\n\nOPERATORS = {\n    \"gte\": np.greater_equal,\n    \"gt\": np.greater,\n    \"lte\": np.less_equal,\n    \"lt\": np.less,\n}\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a binary (2 argument) operator to a cube.\n\n    Example:\n\n    ```\n    context.operator = \"gte\"\n    context.argument = 30\n    result = (cube >= 30)\n    ```\n\n    Why not just use native openEO processes?\n    Because there seems to be a bug related to Parameters.\n    https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3\n\n    Arguments:\n        cube: xarray DataArray\n        context: user-provided arguments.\n    \"\"\"\n    # parse and validate context\n    operator_name = context[\"operator\"]\n    try:\n        operator = OPERATORS[operator_name]\n    except KeyError:\n        raise ValueError(f\"Invalid operator: {operator_name}\")\n\n    argument = context[\"argument\"]\n    if not isinstance(argument, float | int):\n        raise TypeError(f\"Invalid argument: {argument}\")\n\n    inspect(\n        message=f\"applying {operator_name}(cube, {argument})\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return operator(cube, argument)\n",
+                "version": "3.11"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "convertdatatype2": {
+      "process_id": "convert_data_type",
+      "arguments": {
+        "data": {
+          "from_node": "apply2"
+        },
+        "data_type": "bool"
+      }
+    },
+    "reducedimension4": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "convertdatatype2"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement5": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "flattening"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "adddimension3": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension4"
+        },
+        "label": "flattening_mask",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "mergecubes2": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "mergecubes1"
+        },
+        "cube2": {
+          "from_node": "adddimension3"
+        }
+      }
+    },
+    "reducedimension5": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "mergecubes2"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement6": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "temporal_variability_mask"
+              }
+            },
+            "arrayelement7": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "flattening_mask"
+              }
+            },
+            "and1": {
+              "process_id": "and",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement6"
+                },
+                "y": {
+                  "from_node": "arrayelement7"
+                }
+              }
+            },
+            "arrayelement8": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "forest_baseline_mask"
+              }
+            },
+            "and2": {
+              "process_id": "and",
+              "arguments": {
+                "x": {
+                  "from_node": "and1"
+                },
+                "y": {
+                  "from_node": "arrayelement8"
+                }
+              }
+            },
+            "eq1": {
+              "process_id": "eq",
+              "arguments": {
+                "x": {
+                  "from_node": "and2"
+                },
+                "y": 0
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "mask1": {
+      "process_id": "mask",
+      "arguments": {
+        "data": {
+          "from_node": "filterbands1"
+        },
+        "mask": {
+          "from_node": "reducedimension5"
+        }
+      }
+    },
+    "renamelabels2": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "mask1"
+        },
+        "dimension": "bands",
+        "target": [
+          "min_sse_canditates"
+        ]
+      }
+    },
+    "aggregatespatial1": {
+      "process_id": "aggregate_spatial",
+      "arguments": {
+        "data": {
+          "from_node": "mask1"
+        },
+        "geometries": {
+          "from_parameter": "spatial_extent"
+        },
+        "reducer": {
+          "process_graph": {
+            "quantiles1": {
+              "process_id": "quantiles",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "probabilities": [
+                  {
+                    "from_parameter": "logistic_sse_percentile"
+                  }
+                ]
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "vectortoraster1": {
+      "process_id": "vector_to_raster",
+      "arguments": {
+        "data": {
+          "from_node": "aggregatespatial1"
+        },
+        "target": {
+          "from_node": "mask1"
+        }
+      }
+    },
+    "renamelabels3": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "vectortoraster1"
+        },
+        "dimension": "bands",
+        "target": [
+          "measured_percentile"
+        ]
+      }
+    },
+    "mergecubes3": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "renamelabels2"
+        },
+        "cube2": {
+          "from_node": "renamelabels3"
+        }
+      }
+    },
+    "reducedimension6": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "mergecubes3"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement9": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "min_sse_canditates"
+              }
+            },
+            "arrayelement10": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "measured_percentile"
+              }
+            },
+            "lte1": {
+              "process_id": "lte",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement9"
+                },
+                "y": {
+                  "from_node": "arrayelement10"
+                }
+              }
+            },
+            "eq2": {
+              "process_id": "eq",
+              "arguments": {
+                "x": {
+                  "from_node": "lte1"
+                },
+                "y": 0
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "mask2": {
+      "process_id": "mask",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension1"
+        },
+        "mask": {
+          "from_node": "reducedimension6"
+        }
+      }
+    },
+    "adddimension4": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "mask2"
+        },
+        "label": "data",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "renamelabels4": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "resamplecubespatial1"
+        },
+        "dimension": "bands",
+        "target": [
+          "forest_baseline_mask"
+        ]
+      }
+    },
+    "adddimension5": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension6"
+        },
+        "label": "inverse_deforestation_event_mask",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "mergecubes4": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "renamelabels4"
+        },
+        "cube2": {
+          "from_node": "adddimension5"
+        }
+      }
+    },
+    "reducedimension7": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "mergecubes4"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement11": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "forest_baseline_mask"
+              }
+            },
+            "arrayelement12": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "inverse_deforestation_event_mask"
+              }
+            },
+            "and3": {
+              "process_id": "and",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement11"
+                },
+                "y": {
+                  "from_node": "arrayelement12"
+                }
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "applyneighborhood1": {
+      "process_id": "apply_neighborhood",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension7"
+        },
+        "overlap": [
+          {
+            "dimension": "x",
+            "value": 32,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 32,
+            "unit": "px"
+          }
+        ],
+        "process": {
+          "process_graph": {
+            "multiply1": {
+              "process_id": "multiply",
+              "arguments": {
+                "x": {
+                  "from_parameter": "spatial_resolution"
+                },
+                "y": {
+                  "from_parameter": "spatial_resolution"
+                }
+              }
+            },
+            "runudf3": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "pixel_area": {
+                    "from_node": "multiply1"
+                  },
+                  "min_connected_area": {
+                    "from_parameter": "min_connected_area"
+                  }
+                },
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nimport math\nfrom typing import TypedDict\n\nimport numpy as np\nimport scipy\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"connectivity_mask\"\n\n\nclass Context(TypedDict):\n    # pixel area (units: m^2)\n    # I can't find a way to access this information within the UDF\n    pixel_area: float\n\n    # min connected area (units: m^2)\n    min_connected_area: float\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef small_region_mask(input_array: np.ndarray, min_pixels: int) -> np.ndarray:\n    \"\"\"\n    Use scipy.ndimage.label to detect features (clusters of non-zero valued pixels).\n\n    Arguments:\n        input_array: a 2D (spatial) boolean array / mask.\n            1 = valid pixel. 0 = ignored pixel.\n        min_pixels: once clustered into features, exclude features smaller than min_pixels\n\n    Returns:\n        a boolean mask of pixels to exclude, based on a minimum feature size.\n        1 = excluded pixel.\n    \"\"\"\n    if input_array.dtype != bool:\n        raise TypeError(\"input_array must have dtype bool\")\n    if min_pixels < 1:\n        raise ValueError(\"min_pixels must be 1 or greater\")\n\n    # 8-connectivity (diagonals count)\n    structure = np.ones((3, 3))\n\n    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.label.html#scipy.ndimage.label\n    # labelled_features has same shape as input_array.\n    # with clusters of pixels labelled by feature id (integer).\n    # feature id 0 = pixels not belonging to a feature, because their value in input_array is 0.\n    # the first cluster of pixels has feature id = 1.\n    labelled_features, _ = scipy.ndimage.label(input_array, structure=structure)\n\n    # 1D array.\n    # label_counts[i] is number of pixels with feature id = i.\n    label_counts = np.bincount(labelled_features.ravel())\n\n    # map each feature id to a bool (whether it should be masked).\n    # label_masked[i] is whether to mask feature id = i.\n    labels_masked = label_counts < min_pixels\n\n    # do not mask feature id = 0\n    labels_masked[0] = False\n\n    # numpy Integer array indexing https://numpy.org/doc/stable/user/basics.indexing.html#integer-array-indexing\n    # for each pixel in labelled_features (pixel value = feature id)\n    # do a positional lookup from labels_masked,\n    # essentially mapping from feature id to the corresponding true/false from labels_masked.\n    # mask has same shape as labelled_features, which has same shape as input_array\n    mask = labels_masked[labelled_features]\n\n    return mask\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Generate a mask based on pixel connectivity.\n    In the returned mask, pixels with value = 1 correspond to features smaller than min_pixels,\n    which should be excluded.\n\n    Arguments:\n        cube: xarray DataArray\n            Should have spatial dimensions \"x\" and \"y\".\n            Should be a mask of dtype bool.\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    if cube.dtype != bool:\n        inspect(\n            message=f\"expected dtype bool, got dtype {cube.dtype}\", code=LOG_CODE, level=\"warning\"\n        )\n        # try to convert from float\n        cube = cube.notnull() & (cube != 0)\n\n    # parse and validate context\n\n    pixel_area = context[\"pixel_area\"]\n    if not isinstance(pixel_area, float | int):\n        raise TypeError(\"pixel_area should be a float\")\n    if pixel_area <= 0:\n        raise ValueError(\"pixel_area should be positive\")\n\n    min_connected_area = context[\"min_connected_area\"]\n    if not isinstance(min_connected_area, float | int):\n        raise TypeError(\"min_connected_area should be a float\")\n    if min_connected_area < 0:\n        raise ValueError(\"min_connected_area should be positive\")\n\n    min_pixels = math.ceil(min_connected_area / pixel_area)\n    if min_pixels < 1:\n        raise ValueError(\"min_pixels should be at least 1\")\n    total_pixels = cube.sizes[\"y\"] * cube.sizes[\"x\"]\n    if min_pixels >= total_pixels:\n        raise ValueError(\"min_pixels should be less than or equal to the total number of pixels\")\n\n    inspect(\n        message=f\"Applying connectivity mask with min_pixels = {min_pixels}\", code=LOG_CODE, level=\"debug\"\n    )\n\n    mask = xr.apply_ufunc(\n        small_region_mask,\n        cube,\n        input_core_dims=[[\"y\", \"x\"]],\n        output_core_dims=[[\"y\", \"x\"]],\n        vectorize=True,\n        kwargs=dict(min_pixels=min_pixels),\n    )\n\n    returned_dtype = mask.dtype\n    inspect(\n        message=f\"returned dtype = {returned_dtype}\", code=LOG_CODE, level=\"debug\"\n    )\n\n    return mask\n",
+                "version": "3.11"
+              },
+              "result": true
+            }
+          }
+        },
+        "size": [
+          {
+            "dimension": "x",
+            "value": 256,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 256,
+            "unit": "px"
+          }
+        ]
+      }
+    },
+    "convertdatatype3": {
+      "process_id": "convert_data_type",
+      "arguments": {
+        "data": {
+          "from_node": "applyneighborhood1"
+        },
+        "data_type": "bool"
+      }
+    },
+    "adddimension6": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "convertdatatype3"
+        },
+        "label": "mask",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "mergecubes5": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "adddimension4"
+        },
+        "cube2": {
+          "from_node": "adddimension6"
+        }
+      }
+    },
+    "applyneighborhood2": {
+      "process_id": "apply_neighborhood",
+      "arguments": {
+        "data": {
+          "from_node": "mergecubes5"
+        },
+        "overlap": [
+          {
+            "dimension": "x",
+            "value": 32,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 32,
+            "unit": "px"
+          }
+        ],
+        "process": {
+          "process_graph": {
+            "runudf4": {
+              "process_id": "run_udf",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport scipy.ndimage\nfrom openeo.udf import inspect\nfrom openeo.metadata import CollectionMetadata\nimport xarray as xr\n\n\nLOG_CODE = \"nearest_neighbour_fill\"\n\n\nclass Context(TypedDict):\n    pass\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef nearest_neighbour_fill(data: np.ndarray, mask: np.ndarray) -> np.ndarray:\n    \"\"\"\n    Arguments:\n        data: numpy array with 2 dimensions only.\n        mask: numpy array with 2 dimensions only.\n            Truthy values indicate pixels that should be filled.\n    \"\"\"\n    if data.ndim != 2:\n        raise ValueError(\"data should have 2 dimensions only\")\n    if mask.ndim != 2:\n        raise ValueError(\"mask should have 2 dimensions only\")\n\n    mask_bool = mask.astype(bool)\n\n    if not mask_bool.any():\n        # early return\n        return data.copy()\n\n    # get a mask of finite valued pixels that can be used for replacement\n    candidate_mask = np.isfinite(data) & ~mask_bool\n\n    if not candidate_mask.any():\n        raise ValueError(\"no finite valued pixels available for replacement\")\n\n    # scipy.ndimage.distance_transform_edt computes, for each True pixel, the\n    # Euclidean distance to the nearest False pixel.\n\n    # Pass ~candidate_mask to create a lookup from every non-candidate pixel (True)\n    # to the nearest candidate pixel (False).\n    _, nearest_coords = scipy.ndimage.distance_transform_edt(\n        ~candidate_mask, return_indices=True\n    )\n\n    # nearest_coords is a tuple of coordinate arrays, one per axis.\n    # Each array has the same shape as data.\n    # For pixel (i, j), the index of the nearest candidate is (II[i, j], JJ[i, j]).\n    II, JJ = nearest_coords\n\n    output = data.copy()\n    # For each masked pixel, copy the value from its nearest candidate.\n    output[mask_bool] = data[II[mask_bool], JJ[mask_bool]]\n    return output\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Fill masked pixels with the value of the spatially nearest finite valued pixel.\n    If multiple pixels are equally close, one of these is chosen.\n\n    The input cube must have 2 bands labeled:\n        - \"data\": input data layer\n        - \"mask\": truthy = pixels to fill\n\n    If there are masked pixels, but no finite valued pixels in the data band,\n    raise an error.\n\n    Arguments:\n        cube: xarray DataArray\n            Should have spatial dimensions \"x\" and \"y\" and a \"bands\" dimension.\n        context: user-provided arguments.\n\n    Returns:\n        Filled data array, dropping the \"mask\" band.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # validate input bands\n\n    if \"bands\" not in cube.dims:\n        raise ValueError(\"cube must have a bands dimension\")\n    if cube.sizes[\"bands\"] != 2:\n        raise ValueError(\"expected 2 bands: data and mask\")\n\n    try:\n        data = cube.sel(bands=\"data\", drop=True)\n    except KeyError as e:\n        raise ValueError(\"expected a band labeled 'data'\") from e\n    try:\n        mask_band = cube.sel(bands=\"mask\", drop=True)\n    except KeyError as e:\n        raise ValueError(\"expected a band labeled 'mask'\") from e\n\n    filled_data = xr.apply_ufunc(\n        nearest_neighbour_fill,\n        data,\n        mask_band,\n        input_core_dims=[[\"y\", \"x\"], [\"y\", \"x\"]],\n        output_core_dims=[[\"y\", \"x\"]],\n        vectorize=True,\n    )\n\n    return filled_data.expand_dims(bands=[\"data\"])\n\n\ndef apply_metadata(metadata: CollectionMetadata, context: Context) -> CollectionMetadata:\n    \"\"\"\n    Returns the expected cube metadata, after applying this UDF, based on input metadata.\n    \"\"\"\n    return metadata.filter_bands([\"data\"])\n",
+                "version": "3.11"
+              },
+              "result": true
+            }
+          }
+        },
+        "size": [
+          {
+            "dimension": "x",
+            "value": 256,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 256,
+            "unit": "px"
+          }
+        ]
+      },
+      "result": true
+    }
+  },
+  "id": "deforestation",
+  "summary": "Detect decimal year of deforestation",
+  "description": "// TODO",
+  "returns": {
+    "description": "A DataCube with dtype float",
+    "schema": {
+      "type": "object",
+      "subtype": "datacube"
+    }
+  },
+  "parameters": [
+    {
+      "name": "forest_baseline_datacube",
+      "description": [
+        "The forest baseline datacube to process. ",
+        "This is a pixel mask, where 1 = natural forest. Dimensions: [bands, y, x]. Bands: [B0]. "
+      ],
+      "schema": {
+        "type": "object",
+        "subtype": "datacube"
+      }
+    },
+    {
+      "name": "sentinel_1_datacube",
+      "description": [
+        "The Sentinel-1 datacube to process. ",
+        "Dimensions: [bands, y, x]. Bands: [min_sse, min_sse_t, sd, p05, p95]. "
+      ],
+      "schema": {
+        "type": "object",
+        "subtype": "datacube"
+      }
+    },
+    {
+      "name": "spatial_extent",
+      "description": "Geometries specified as GeoJSON object.",
+      "schema": {
+        "type": "object",
+        "subtype": "geojson"
+      },
+      "default": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              31.222952123,
+              1.07092790500008
+            ],
+            [
+              31.222952123,
+              1.54693730500003
+            ],
+            [
+              30.5503711040001,
+              1.54693730500003
+            ],
+            [
+              30.5503711040001,
+              1.07092790500008
+            ],
+            [
+              31.222952123,
+              1.07092790500008
+            ]
+          ]
+        ]
+      },
+      "optional": true
+    },
+    {
+      "name": "spatial_resolution",
+      "description": [
+        "The spatial resolution to process. Units: meters. ",
+        "Data are resampled to this resolution. "
+      ],
+      "schema": {
+        "type": "number"
+      },
+      "default": 30,
+      "optional": true
+    },
+    {
+      "name": "temporal_variability_threshold",
+      "description": "Exclude any pixels with temporal standard deviation below this threshold. Units: dB",
+      "schema": {
+        "type": "number"
+      },
+      "default": 0.5,
+      "optional": true
+    },
+    {
+      "name": "flattening_threshold",
+      "description": "Exclude any pixels with flattening below this threshold. Units: dimensionless",
+      "schema": {
+        "type": "number"
+      },
+      "default": 0.12,
+      "optional": true
+    },
+    {
+      "name": "logistic_sse_percentile",
+      "description": "Exclude any pixels with Sum of Squared Errors (SSE) above this percentile. Units: fraction",
+      "schema": {
+        "type": "number"
+      },
+      "default": 0.95,
+      "optional": true
+    },
+    {
+      "name": "min_connected_area",
+      "description": "Minimum connected area to be considered forest. Units: m^2",
+      "schema": {
+        "type": "number"
+      },
+      "default": 10000,
+      "optional": true
+    }
+  ]
+}

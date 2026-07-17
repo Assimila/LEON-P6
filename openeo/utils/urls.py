@@ -6,3 +6,6 @@ FOREST_BASELINE_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/h
 
 # TODO: point to main branch once merged
 S1_PROCESSING_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/s1-processing/udp.json"
+
+# TODO: point to main branch once merged
+DEFORESTATION_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/deforestation/udp.json"
