@@ -115,3 +115,45 @@ LOGISTIC_STEEPNESS_PARAMETER = Parameter.number(
     description="The steepness parameter of the logistic curve fit. Units: dimensionless",
     default=-2.0,
 )
+
+
+TEMPORAL_VARIABILITY_THRESHOLD = Parameter.number(
+    name="temporal_variability_threshold",
+    description="Exclude any pixels with temporal standard deviation below this threshold. Units: dB",
+    default=0.5,
+)
+
+FLATTENING_THRESHOLD = Parameter.number(
+    name="flattening_threshold",
+    description="Exclude any pixels with flattening below this threshold. Units: dimensionless",
+    default=0.12,
+)
+
+LOGISTIC_SSE_PERCENTILE = Parameter.number(
+    name="logistic_sse_percentile",
+    description="Exclude any pixels with Sum of Squared Errors (SSE) above this percentile. Units: fraction",
+    default=0.95,
+)
+
+
+# outputs from other UDPs
+
+FOREST_BASELINE_DATACUBE = Parameter.datacube(
+    name="forest_baseline_datacube",
+    description=(
+        "The forest baseline datacube to process. ",
+        "This is a pixel mask, where 1 = natural forest. "
+        "Dimensions: [bands, y, x]. "
+        "Bands: [B0]. ",
+    ),
+)
+
+
+SENTINEL_1_DATACUBE = Parameter.datacube(
+    name="sentinel_1_datacube",
+    description=(
+        "The Sentinel-1 datacube to process. ",
+        "Dimensions: [bands, y, x]. "
+        "Bands: [min_sse, min_sse_t, sd, p05, p95]. ",
+    ),
+)
