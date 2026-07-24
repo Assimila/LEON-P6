@@ -58,9 +58,10 @@
         "spatial_extent": {
           "from_parameter": "spatial_extent"
         },
-        "temporal_extent": {
-          "from_parameter": "temporal_extent"
-        }
+        "temporal_extent": [
+          "2019-10-01",
+          "2022-04-01"
+        ]
       }
     },
     "sarbackscatter1": {
@@ -117,7 +118,7 @@
                   "from_parameter": "data"
                 },
                 "runtime": "Python",
-                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"lee_speckle_filter\"\n\n\nclass Context(TypedDict):\n    # the radius of the circular filter in pixels. Should be at least 1.\n    # for example, radius=2 means that the filter will consider a 5x5 window.\n    radius: int\n\n    # coefficient of variation of the noise.\n    # For a look-count of N, this ~ 1 / sqrt(N)\n    cv_noise: float\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a circular Lee filter.\n\n    There is no special case for edge pixels.\n    Because we expect to be processing a buffered chunk of a larger image,\n    with an overlap of at least `radius` pixels on each side.\n\n    Arguments:\n        cube: xarray Dataset\n            Should have spatial dimensions \"x\" and \"y\" of size at least (2 * radius + 1).\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # parse and validate context\n\n    radius = context[\"radius\"]\n    if not isinstance(radius, int):\n        raise ValueError(\"radius should be an integer\")\n    if radius < 1:\n        raise ValueError(\"radius should be at least 1\")\n\n    cv_noise = context[\"cv_noise\"]\n    if not isinstance(cv_noise, float):\n        raise ValueError(\"cv_noise should be a number\")\n    if cv_noise <= 0:\n        raise ValueError(\"cv_noise should be positive\")\n\n    # circular kernel over dims (x_win, y_win)\n\n    kernel = xr.DataArray(\n        1.0,\n        dims=[\"x_win\", \"y_win\"],\n        coords={\n            \"x_win\": range(-radius, radius + 1),\n            \"y_win\": range(-radius, radius + 1),\n        },\n    )\n    kernel = kernel.where(kernel.x_win**2 + kernel.y_win**2 <= radius**2, 0.0)\n    kernel = kernel / kernel.sum()\n\n    # construct a rolling window over (x, y)\n    # adding dimensions (x_win, y_win) to the cube\n\n    window = cube.rolling(\n        x=2 * radius + 1,\n        y=2 * radius + 1,\n        # the window is centred on the pixel of interest in (x, y)\n        center=True,\n    ).construct(\n        x=\"x_win\",\n        y=\"y_win\",\n    )\n\n    # local mean and variance\n\n    mu = window.dot(kernel)\n    sigma2 = (window**2).dot(kernel) - mu**2\n\n    # avoid division by zero in homogeneous areas where local variance is ~0\n    eps = 1e-12\n    sigma2 = sigma2.where(sigma2 > eps, eps)\n    W = 1 - cv_noise**2 * mu**2 / sigma2\n    W = W.clip(min=0.0, max=1.0)\n\n    output = mu + W * (cube - mu)\n\n    nan_pct = (output.isnull().sum().item() / output.size) * 100\n    inspect(\n        message=f\"NaNs in returned cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return output\n",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"lee_speckle_filter\"\n\n\nclass Context(TypedDict):\n    # the radius of the circular filter in pixels. Should be at least 1.\n    # for example, radius=2 means that the filter will consider a 5x5 window.\n    radius: int\n\n    # coefficient of variation of the noise.\n    # For a look-count of N, this ~ 1 / sqrt(N)\n    cv_noise: float\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a circular Lee filter.\n\n    There is no special case for edge pixels.\n    Because we expect to be processing a buffered chunk of a larger image,\n    with an overlap of at least `radius` pixels on each side.\n\n    Arguments:\n        cube: xarray DataArray\n            Should have spatial dimensions \"x\" and \"y\" of size at least (2 * radius + 1).\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # parse and validate context\n\n    radius = context[\"radius\"]\n    if not isinstance(radius, int):\n        raise ValueError(\"radius should be an integer\")\n    if radius < 1:\n        raise ValueError(\"radius should be at least 1\")\n\n    cv_noise = context[\"cv_noise\"]\n    if not isinstance(cv_noise, float):\n        raise ValueError(\"cv_noise should be a number\")\n    if cv_noise <= 0:\n        raise ValueError(\"cv_noise should be positive\")\n\n    # circular kernel over dims (x_win, y_win)\n\n    kernel = xr.DataArray(\n        1.0,\n        dims=[\"x_win\", \"y_win\"],\n        coords={\n            \"x_win\": range(-radius, radius + 1),\n            \"y_win\": range(-radius, radius + 1),\n        },\n    )\n    kernel = kernel.where(kernel.x_win**2 + kernel.y_win**2 <= radius**2, 0.0)\n    kernel = kernel / kernel.sum()\n\n    # construct a rolling window over (x, y)\n    # adding dimensions (x_win, y_win) to the cube\n\n    window = cube.rolling(\n        x=2 * radius + 1,\n        y=2 * radius + 1,\n        # the window is centred on the pixel of interest in (x, y)\n        center=True,\n    ).construct(\n        x=\"x_win\",\n        y=\"y_win\",\n    )\n\n    # local mean and variance\n\n    mu = window.dot(kernel)\n    sigma2 = (window**2).dot(kernel) - mu**2\n\n    # avoid division by zero in homogeneous areas where local variance is ~0\n    eps = 1e-12\n    sigma2 = sigma2.where(sigma2 > eps, eps)\n    W = 1 - cv_noise**2 * mu**2 / sigma2\n    W = W.clip(min=0.0, max=1.0)\n\n    output = mu + W * (cube - mu)\n\n    nan_pct = (output.isnull().sum().item() / output.size) * 100\n    inspect(\n        message=f\"NaNs in returned cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return output\n",
                 "version": "3.11"
               },
               "result": true
@@ -177,7 +178,7 @@
                   "from_parameter": "data"
                 },
                 "runtime": "Python",
-                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"multitemporal_speckle_filter_atbd\"\n\n\nclass Context(TypedDict):\n    # the radius of the circular filter in pixels.\n    # Should be at least 1.\n    # for example, radius=2 means that the filter will consider a 5x5 window.\n    radius: int\n\n    # size of the temporal window (number of time steps to consider).\n    # Should be at least 3, and an odd number.\n    window_size: int\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a multitemporal speckle filter.\n    With a moving window.\n\n    This is the formulation from the ATBD.\n    It is an inverse local-mean weighted average.\n\n    There is no special case for edge pixels.\n    Because we expect to be processing a buffered chunk of a larger image,\n    with an overlap of at least `radius` pixels on each side.\n\n    Arguments:\n        cube: xarray Dataset\n            Should have spatial dimensions \"x\" and \"y\" of size at least (2 * `radius` + 1).\n            And temporal dimension \"t\" of size at least `window`.\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # parse and validate context\n\n    radius = context[\"radius\"]\n    if not isinstance(radius, int):\n        raise ValueError(\"radius should be an integer\")\n    if radius < 1:\n        raise ValueError(\"radius should be at least 1\")\n    window_size = context[\"window_size\"]\n    if not isinstance(window_size, int):\n        raise ValueError(\"window should be an integer\")\n    if window_size < 3 or window_size % 2 == 0:\n        raise ValueError(\"window should be an odd integer, at least 3\")\n\n    if cube.sizes[\"t\"] < window_size:\n        raise ValueError(\"Insufficient temporal data\")\n\n    # circular kernel over dims (x_win, y_win)\n\n    kernel = xr.DataArray(\n        1.0,\n        dims=[\"x_win\", \"y_win\"],\n        coords={\n            \"x_win\": range(-radius, radius + 1),\n            \"y_win\": range(-radius, radius + 1),\n        },\n    )\n    kernel = kernel.where(kernel.x_win**2 + kernel.y_win**2 <= radius**2, 0.0)\n    kernel = kernel / kernel.sum()\n\n    # construct a rolling window over (x, y)\n    # adding dimensions (x_win, y_win) to the cube\n\n    window = cube.rolling(\n        x=2 * radius + 1,\n        y=2 * radius + 1,\n        # the window is centred on the pixel of interest in (x, y)\n        center=True,\n    ).construct(\n        x=\"x_win\",\n        y=\"y_win\",\n    )\n\n    # local mean\n\n    mu = window.dot(kernel)\n\n    # normalised intensity\n\n    eps = 1e-12\n    if (abs(mu) < eps).any():\n        inspect(\n            message=\"Warning: local mean is close to zero for some pixels, which may lead to instability in the filter.\",\n            code=LOG_CODE,\n            level=\"warning\",\n        )\n\n    # numerator\n    ni = cube / mu\n    # denominator\n    inv_mu = 1.0 / mu\n\n    # rolling window over time dimension\n\n    sum_ni = ni.rolling(t=window_size, center=True).sum()\n    sum_inv_mu = inv_mu.rolling(t=window_size, center=True).sum()\n\n    output = sum_ni / sum_inv_mu\n\n    nan_pct = (output.isnull().sum().item() / output.size) * 100\n    inspect(\n        message=f\"NaNs in returned cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return output\n",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"multitemporal_speckle_filter_atbd\"\n\n\nclass Context(TypedDict):\n    # the radius of the circular filter in pixels.\n    # Should be at least 1.\n    # for example, radius=2 means that the filter will consider a 5x5 window.\n    radius: int\n\n    # size of the temporal window (number of time steps to consider).\n    # Should be at least 3, and an odd number.\n    window_size: int\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply a multitemporal speckle filter.\n    With a moving window.\n\n    This is the formulation from the ATBD.\n    It is an inverse local-mean weighted average.\n\n    There is no special case for edge pixels.\n    Because we expect to be processing a buffered chunk of a larger image,\n    with an overlap of at least `radius` pixels on each side.\n\n    Arguments:\n        cube: xarray DataArray\n            Should have spatial dimensions \"x\" and \"y\" of size at least (2 * `radius` + 1).\n            And temporal dimension \"t\" of size at least `window`.\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # parse and validate context\n\n    radius = context[\"radius\"]\n    if not isinstance(radius, int):\n        raise ValueError(\"radius should be an integer\")\n    if radius < 1:\n        raise ValueError(\"radius should be at least 1\")\n    window_size = context[\"window_size\"]\n    if not isinstance(window_size, int):\n        raise ValueError(\"window should be an integer\")\n    if window_size < 3 or window_size % 2 == 0:\n        raise ValueError(\"window should be an odd integer, at least 3\")\n\n    if cube.sizes[\"t\"] < window_size:\n        raise ValueError(\"Insufficient temporal data\")\n\n    # circular kernel over dims (x_win, y_win)\n\n    kernel = xr.DataArray(\n        1.0,\n        dims=[\"x_win\", \"y_win\"],\n        coords={\n            \"x_win\": range(-radius, radius + 1),\n            \"y_win\": range(-radius, radius + 1),\n        },\n    )\n    kernel = kernel.where(kernel.x_win**2 + kernel.y_win**2 <= radius**2, 0.0)\n    kernel = kernel / kernel.sum()\n\n    # construct a rolling window over (x, y)\n    # adding dimensions (x_win, y_win) to the cube\n\n    window = cube.rolling(\n        x=2 * radius + 1,\n        y=2 * radius + 1,\n        # the window is centred on the pixel of interest in (x, y)\n        center=True,\n    ).construct(\n        x=\"x_win\",\n        y=\"y_win\",\n    )\n\n    # local mean\n\n    mu = window.dot(kernel)\n\n    eps = 1e-12\n    if (abs(mu) < eps).any():\n        inspect(\n            message=\"Warning: local mean is close to zero for some pixels, which may lead to instability in the filter.\",\n            code=LOG_CODE,\n            level=\"warning\",\n        )\n\n    # numerator - normalised intensity\n    ni = cube / mu\n    # denominator\n    inv_mu = 1.0 / mu\n\n    # rolling window over time dimension\n\n    sum_ni = ni.rolling(t=window_size, center=True).sum()\n    sum_inv_mu = inv_mu.rolling(t=window_size, center=True).sum()\n\n    output = sum_ni / sum_inv_mu\n\n    nan_pct = (output.isnull().sum().item() / output.size) * 100\n    inspect(\n        message=f\"NaNs in returned cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return output\n",
                 "version": "3.11"
               },
               "result": true
@@ -395,7 +396,7 @@
                   "from_parameter": "data"
                 },
                 "runtime": "Python",
-                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"logistic_curve_sse\"\n\n\nclass Context(TypedDict):\n    # size of the temporal window (number of time steps to consider).\n    # Should be at least 3, and an odd number.\n    window_size: int\n\n    # ATBD says = -2.0\n    # which equates to a significant change over 3 images\n    steepness_parameter: float\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply logistic curve as window function over dim \"t\".\n    This is kind of like a convolution, where we calculate sum squared error at each time.\n\n    Arguments:\n        cube: xarray Dataset.\n            dims (t, ...) where \"...\" indicates other broadcast-able dimensions.\n            Temporal dimension \"t\" of size at least `window`.\n\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # parse and validate context\n\n    window_size = context[\"window_size\"]\n    if not isinstance(window_size, int):\n        raise ValueError(\"window should be an integer\")\n    if window_size < 3 or window_size % 2 == 0:\n        raise ValueError(\"window should be an odd integer, at least 3\")\n    steepness_parameter = context[\"steepness_parameter\"]\n    if not isinstance(steepness_parameter, float):\n        raise ValueError(\"steepness_parameter should be a float\")\n\n    if cube.sizes[\"t\"] < window_size:\n        raise ValueError(\"Insufficient temporal data\")\n\n    # compute p05 and p95\n    # these have dims (...)\n    # p05 = \"LowLim\"\n    p05 = cube.quantile(0.05, dim=\"t\")\n    p95 = cube.quantile(0.95, dim=\"t\")\n    # amplitude\n    k = p95 - p05\n\n    # construct a rolling window over t\n    # adding dimension t_win to the cube\n\n    windows = cube.rolling(t=window_size, center=True).construct(\n        t=\"t_win\"\n    )  # dims (t, t_win, ...)\n\n    # window indices [0, 1, 2, 3, ...]\n    t_i = windows.t_win  # dims (t_win)\n\n    # midpoint of window\n    t_0 = window_size // 2\n\n    exponent = -1.0 * steepness_parameter * (t_i - t_0)  # dims (t_win)\n\n    predicted = p05 + k / (1 + np.exp(exponent))  # dims (t_win, ...)\n\n    diff = windows - predicted  # dims (t, t_win, ...)\n\n    # reduce over t_win\n    rss = (diff**2.0).sum(\n        dim=\"t_win\",\n        # do not skip NaN, because rss is used as an absolute value\n        skipna=False,\n    )\n\n    nan_pct = (rss.isnull().sum().item() / rss.size) * 100\n    inspect(\n        message=f\"NaNs in returned cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return rss\n",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"logistic_curve_sse\"\n\n\nclass Context(TypedDict):\n    # size of the temporal window (number of time steps to consider).\n    # Should be at least 3, and an odd number.\n    window_size: int\n\n    # ATBD says = -2.0\n    # which equates to a significant change over 3 images\n    steepness_parameter: float\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Apply logistic curve as window function over dim \"t\".\n    This is kind of like a convolution, where we calculate sum squared error at each time.\n\n    Arguments:\n        cube: xarray DataArray.\n            dims (t, ...) where \"...\" indicates other broadcast-able dimensions.\n            Temporal dimension \"t\" of size at least `window`.\n\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # parse and validate context\n\n    window_size = context[\"window_size\"]\n    if not isinstance(window_size, int):\n        raise ValueError(\"window should be an integer\")\n    if window_size < 3 or window_size % 2 == 0:\n        raise ValueError(\"window should be an odd integer, at least 3\")\n    steepness_parameter = context[\"steepness_parameter\"]\n    if not isinstance(steepness_parameter, float):\n        raise ValueError(\"steepness_parameter should be a float\")\n\n    if cube.sizes[\"t\"] < window_size:\n        raise ValueError(\"Insufficient temporal data\")\n\n    # compute p05 and p95\n    # these have dims (...)\n\n    # .quantile() adds a non-dimension coordinate \"quantile\", which we drop\n    p05 = cube.quantile(0.05, dim=\"t\").drop_vars(\"quantile\")\n    p95 = cube.quantile(0.95, dim=\"t\").drop_vars(\"quantile\")\n\n    # amplitude\n    k = p95 - p05\n\n    # construct a rolling window over t\n    # adding dimension t_win to the cube\n\n    windows = cube.rolling(t=window_size, center=True).construct(\n        t=\"t_win\"\n    )  # dims (t, t_win, ...)\n\n    # window indices [0, 1, 2, 3, ...]\n    t_i = windows.t_win  # dims (t_win)\n\n    # midpoint of window\n    t_0 = window_size // 2\n\n    exponent = -1.0 * steepness_parameter * (t_i - t_0)  # dims (t_win)\n\n    predicted = p05 + k / (1 + np.exp(exponent))  # dims (t_win, ...)\n\n    diff = windows - predicted  # dims (t, t_win, ...)\n\n    # reduce over t_win\n    rss = (diff**2.0).sum(\n        dim=\"t_win\",\n        # do not skip NaN, because rss is used as an absolute value\n        skipna=False,\n    )\n\n    nan_pct = (rss.isnull().sum().item() / rss.size) * 100\n    inspect(\n        message=f\"NaNs in returned cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return rss\n",
                 "version": "3.11"
               },
               "result": true
@@ -466,7 +467,7 @@
                   "from_parameter": "data"
                 },
                 "runtime": "Python",
-                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"idxmin_t\"\n\n\nclass Context(TypedDict):\n    pass\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Find the idxmin of dimension \"t\".\n    Convert from datetime to decimal year (float)\n\n    Arguments:\n        cube: xarray Dataset.\n            dims (t, ...) where \"...\" indicates other broadcast-able dimensions.\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # Get the datetime coordinates for the minimums\n    min_times = cube.idxmin(dim=\"t\")\n    # this is now a cube of dtype datetime64\n\n    # not available in xarray 2024.7\n    # decimal_year = min_times.dt.decimal_year\n\n    year = min_times.dt.year\n    doy = min_times.dt.dayofyear\n    days_in_year = xr.where(min_times.dt.is_leap_year, 366, 365)\n\n    decimal_year = year + (doy - 1) / days_in_year\n\n    return decimal_year\n",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nfrom openeo.udf import inspect\nimport xarray as xr\n\n\nLOG_CODE = \"idxmin_t\"\n\n\nclass Context(TypedDict):\n    pass\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Find the idxmin of dimension \"t\".\n    Convert from datetime to decimal year (float)\n\n    Arguments:\n        cube: xarray DataArray.\n            dims (t, ...) where \"...\" indicates other broadcast-able dimensions.\n        context: user-provided arguments.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    nan_pct = (cube.isnull().sum().item() / cube.size) * 100\n    inspect(\n        message=f\"NaNs in input cube = {nan_pct:.2f}%\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    # Get the datetime coordinates for the minimums\n    min_times = cube.idxmin(dim=\"t\")\n    # this is now a cube of dtype datetime64\n\n    # not available in xarray 2024.7\n    # decimal_year = min_times.dt.decimal_year\n\n    year = min_times.dt.year\n    doy = min_times.dt.dayofyear\n    days_in_year = xr.where(min_times.dt.is_leap_year, 366, 365)\n\n    decimal_year = year + (doy - 1) / days_in_year\n\n    return decimal_year\n",
                 "version": "3.11"
               },
               "result": true
@@ -513,71 +514,96 @@
   "parameters": [
     {
       "name": "spatial_extent",
-      "description": "Geometries specified as GeoJSON object.",
-      "schema": {
-        "type": "object",
-        "subtype": "geojson"
-      },
-      "default": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              31.222952123,
-              1.07092790500008
-            ],
-            [
-              31.222952123,
-              1.54693730500003
-            ],
-            [
-              30.5503711040001,
-              1.54693730500003
-            ],
-            [
-              30.5503711040001,
-              1.07092790500008
-            ],
-            [
-              31.222952123,
-              1.07092790500008
-            ]
-          ]
-        ]
-      },
-      "optional": true
-    },
-    {
-      "name": "temporal_extent",
-      "description": "The temporal extent of the data to process. Pad by 3 months on each end to allow for full logistic curve fit.",
-      "schema": {
-        "type": "array",
-        "subtype": "temporal-interval",
-        "uniqueItems": true,
-        "minItems": 2,
-        "maxItems": 2,
-        "items": {
-          "anyOf": [
-            {
-              "type": "string",
-              "subtype": "date-time",
-              "format": "date-time"
+      "description": "Limits the data to process to the specified bounding box or polygons.\n\nFor raster data, the process loads the pixel into the data cube if the point\nat the pixel center intersects with the bounding box or any of the polygons\n(as defined in the Simple Features standard by the OGC).\n\nFor vector data, the process loads the geometry into the data cube if the geometry\nis fully within the bounding box or any of the polygons (as defined in the\nSimple Features standard by the OGC). Empty geometries may only be in the\ndata cube if no spatial extent has been provided.\n\nEmpty geometries are ignored.\n\nSet this parameter to null to set no limit for the spatial extent.",
+      "schema": [
+        {
+          "title": "Bounding Box",
+          "type": "object",
+          "subtype": "bounding-box",
+          "required": [
+            "west",
+            "south",
+            "east",
+            "north"
+          ],
+          "properties": {
+            "west": {
+              "description": "West (lower left corner, coordinate axis 1).",
+              "type": "number"
             },
-            {
-              "type": "string",
-              "subtype": "date",
-              "format": "date"
+            "south": {
+              "description": "South (lower left corner, coordinate axis 2).",
+              "type": "number"
             },
+            "east": {
+              "description": "East (upper right corner, coordinate axis 1).",
+              "type": "number"
+            },
+            "north": {
+              "description": "North (upper right corner, coordinate axis 2).",
+              "type": "number"
+            },
+            "base": {
+              "description": "Base (optional, lower left corner, coordinate axis 3).",
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null
+            },
+            "height": {
+              "description": "Height (optional, upper right corner, coordinate axis 3).",
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null
+            },
+            "crs": {
+              "description": "Coordinate reference system of the extent, specified as as [EPSG code](http://www.epsg-registry.org/) or [WKT2 CRS string](http://docs.opengeospatial.org/is/18-010r7/18-010r7.html). Defaults to `4326` (EPSG code 4326) unless the client explicitly requests a different coordinate reference system.",
+              "anyOf": [
+                {
+                  "title": "EPSG Code",
+                  "type": "integer",
+                  "subtype": "epsg-code",
+                  "minimum": 1000,
+                  "examples": [
+                    3857
+                  ]
+                },
+                {
+                  "title": "WKT2",
+                  "type": "string",
+                  "subtype": "wkt2-definition"
+                }
+              ],
+              "default": 4326
+            }
+          }
+        },
+        {
+          "title": "Vector data cube",
+          "description": "Limits the data cube to the bounding box of the given geometries in the vector data cube. For raster data, all pixels inside the bounding box that do not intersect with any of the polygons will be set to no data (`null`). Empty geometries are ignored.",
+          "type": "object",
+          "subtype": "datacube",
+          "dimensions": [
             {
-              "type": "null"
+              "type": "geometry"
             }
           ]
+        },
+        {
+          "title": "No filter",
+          "description": "Don't filter spatially. All data is included in the data cube.",
+          "type": "null"
         }
-      },
-      "default": [
-        "2019-10-01",
-        "2025-04-01"
       ],
+      "default": {
+        "west": 30.5503711040001,
+        "south": 1.07092790500008,
+        "east": 31.222952123,
+        "north": 1.54693730500003
+      },
       "optional": true
     },
     {
@@ -639,7 +665,7 @@
     },
     {
       "name": "logistic_window_size",
-      "description": "The window size of the logistic curve fit. Units: pixels",
+      "description": "The window size (number of observations) of the logistic curve fit",
       "schema": {
         "type": "number"
       },
