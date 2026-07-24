@@ -1,8 +1,10 @@
-import sys
 import pprint
+import sys
+
+import openeo.processes
+from openeo.api.process import Parameter
 
 import openeo
-import openeo.processes
 
 
 def describe_collection(
@@ -44,8 +46,11 @@ def percentile_cube(
     Returns:
         A DataCube like `cube` but where the pixel values are equal to the calculated percentile.
     """
+    if isinstance(percentile, Parameter):
+        # https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/
+        raise NotImplementedError("Percentile as Parameter is not supported")
 
-    def calculate_percentile(data: openeo.processes.ProcessBuilder):
+    def calculate_percentile(data: openeo.processes.ProcessBuilder) -> openeo.processes.ProcessBuilder:
         return data.quantiles(probabilities=[percentile])
 
     # reduce_spatial not available

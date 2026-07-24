@@ -3,7 +3,6 @@ reusable UDP Parameters
 """
 
 import numpy as np
-import shapely
 from openeo.api.process import Parameter
 
 spatial_extent = {
@@ -13,25 +12,14 @@ spatial_extent = {
     "north": 1.5469373050000299,
 }
 
-# spatial extent as dict of Polygon geometry
-spatial_extent = shapely.geometry.mapping(
-    shapely.box(
-        xmin=spatial_extent["west"],
-        ymin=spatial_extent["south"],
-        xmax=spatial_extent["east"],
-        ymax=spatial_extent["north"],
-    )
-)
+SPATIAL_EXTENT = Parameter.spatial_extent(default=spatial_extent)
 
-# This is deliberately a `Parameter.geojson`, not a `Parameter.spatial_extent`,
-# because CDSE does not implement `reduce_spatial` method, so we have to use `aggregate_spatial` instead.
-SPATIAL_EXTENT = Parameter.geojson(name="spatial_extent", default=spatial_extent)
-
-TEMPORAL_EXTENT = Parameter.temporal_interval(
-    name="temporal_extent",
-    description="The temporal extent of the data to process. Pad by 3 months on each end to allow for full logistic curve fit.",
-    default=["2019-10-01", "2025-04-01"],
-)
+# Temporal extent is hard-coded for this workflow.
+# TEMPORAL_EXTENT = Parameter.temporal_interval(
+#     name="temporal_extent",
+#     description="The temporal extent of the data to process. Pad by 3 months on each end to allow for full logistic curve fit.",
+#     default=["2019-10-01", "2025-04-01"],
+# )
 
 CANOPY_COVER_THRESHOLD = Parameter.number(
     name="canopy_cover_threshold",
@@ -106,7 +94,7 @@ SPATIAL_RESOLUTION = Parameter.number(
 
 LOGISTIC_WINDOW_SIZE = Parameter.number(
     name="logistic_window_size",
-    description="The window size of the logistic curve fit. Units: pixels",
+    description="The window size (number of observations) of the logistic curve fit",
     default=11,
 )
 
@@ -141,10 +129,10 @@ LOGISTIC_SSE_PERCENTILE = Parameter.number(
 FOREST_BASELINE_DATACUBE = Parameter.datacube(
     name="forest_baseline_datacube",
     description=(
-        "The forest baseline datacube to process. ",
+        "The forest baseline datacube to process. "
         "This is a pixel mask, where 1 = natural forest. "
         "Dimensions: [bands, y, x]. "
-        "Bands: [B0]. ",
+        "Bands: [B0]. "
     ),
 )
 
@@ -152,8 +140,8 @@ FOREST_BASELINE_DATACUBE = Parameter.datacube(
 SENTINEL_1_DATACUBE = Parameter.datacube(
     name="sentinel_1_datacube",
     description=(
-        "The Sentinel-1 datacube to process. ",
+        "The Sentinel-1 datacube to process. "
         "Dimensions: [bands, y, x]. "
-        "Bands: [min_sse, min_sse_t, sd, p05, p95]. ",
+        "Bands: [min_sse, min_sse_t, sd, p05, p95]. "
     ),
 )
