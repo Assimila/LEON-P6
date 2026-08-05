@@ -202,10 +202,12 @@
     "resamplespatial1": {
       "process_id": "resample_spatial",
       "arguments": {
+        "align": "upper-left",
         "data": {
           "from_node": "applyneighborhood2"
         },
         "method": "average",
+        "projection": null,
         "resolution": {
           "from_parameter": "spatial_resolution"
         }

@@ -5,6 +5,18 @@ cd openeo
 conda env create -f environment.yml
 ```
 
+make sure to activate the environment
+
+```bash
+conda activate LEON-P6
+```
+
+update the environment
+
+```bash
+conda env update -f environment.yml
+```
+
 # run unit tests
 
 for the UDFs

@@ -18,7 +18,7 @@ dependencies:
   - xarray=2024.7.0
 
   # not in UDF environment
-  - openeo
+  - openeo>=0.51.0
   - ipykernel
   - rioxarray
   # - h5netcdf
