@@ -2,7 +2,6 @@ import unittest
 
 import numpy as np
 import xarray as xr
-
 from udf import nearest_neighbour_fill
 
 
@@ -102,6 +101,31 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
         input_xr = make_cube(data, mask)
         expected = xr.DataArray(
             np.array([[[5.0, np.nan, np.nan, 10.0, np.nan, 10.0]]]),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data"]},
+        )
+
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
+
+        xr.testing.assert_equal(output_xr, expected)
+
+    def test_nan_mask_edge_not_filled(self):
+        """
+        NaN along a mask edge must not be treated as a fill request.
+
+        In production this UDF runs via apply_neighborhood 
+        with spatial chunks plus overlap.
+        Near the AOI / data extent boundary, that overlap can hang past valid
+        pixels, so the mask band arrives with np.nan along the edge.
+        """
+        data = np.array([[1.0, 2.0, 0.0]])
+        mask = np.array([[np.nan, 0.0, 1.0]])
+        input_xr = make_cube(data, mask)
+        # Only the 1.0 mask pixel should be filled from its nearest finite
+        # non-masked neighbour (2.0). The left-edge mask NaN must leave data
+        # unchanged (stay 1.0), not be treated as a fill request.
+        expected = xr.DataArray(
+            np.array([[[1.0, 2.0, 2.0]]]),
             dims=["bands", "y", "x"],
             coords={"bands": ["data"]},
         )

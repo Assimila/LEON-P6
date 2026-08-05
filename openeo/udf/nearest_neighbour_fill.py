@@ -10,10 +10,10 @@ from typing import TypedDict
 
 import numpy as np
 import scipy.ndimage
-from openeo.udf import inspect
-from openeo.metadata import CollectionMetadata
 import xarray as xr
+from openeo.metadata import CollectionMetadata
 
+from openeo.udf import inspect
 
 LOG_CODE = "nearest_neighbour_fill"
 
@@ -35,14 +35,18 @@ def nearest_neighbour_fill(data: np.ndarray, mask: np.ndarray) -> np.ndarray:
     Arguments:
         data: numpy array with 2 dimensions only.
         mask: numpy array with 2 dimensions only.
-            Truthy values indicate pixels that should be filled.
+            Truthy finite values indicate pixels that should be filled.
+            NaN (nodata) is ignored - those pixels are left unchanged.
     """
     if data.ndim != 2:
         raise ValueError("data should have 2 dimensions only")
     if mask.ndim != 2:
         raise ValueError("mask should have 2 dimensions only")
 
-    mask_bool = mask.astype(bool)
+    # NaN in the mask band means nodata (outside the data extent), not a fill
+    # request. apply_neighborhood chunks can include overlap beyond the extent,
+    # so the mask arrives with NaN edges that must be left alone.
+    mask_bool = np.isfinite(mask) & (mask != 0)
 
     if not mask_bool.any():
         # early return
@@ -81,7 +85,8 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
 
     The input cube must have 2 bands labeled:
         - "data": input data layer
-        - "mask": truthy = pixels to fill
+        - "mask": truthy finite = pixels to fill.
+            NaN (nodata) is ignored - those pixels are left unchanged.
 
     If there are masked pixels, but no finite valued pixels in the data band,
     raise an error.
