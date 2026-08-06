@@ -2,7 +2,6 @@ import unittest
 
 import numpy as np
 import xarray as xr
-
 from udf import connectivity_mask
 
 
@@ -27,7 +26,7 @@ class Test_connectivity_mask(unittest.TestCase):
         for min_connected_area in range(1, 10):
             with self.subTest(min_connected_area=min_connected_area):
                 context = {
-                    "pixel_area": 1.0,
+                    "spatial_resolution": 1.0,
                     "min_connected_area": min_connected_area,
                 }
 
@@ -52,7 +51,7 @@ class Test_connectivity_mask(unittest.TestCase):
         expected = input_xr.copy()
 
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 10,
         }
 
@@ -78,7 +77,7 @@ class Test_connectivity_mask(unittest.TestCase):
         expected.values[:] = 0
 
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 5.0,
         }
 
@@ -104,7 +103,7 @@ class Test_connectivity_mask(unittest.TestCase):
         expected.values[:] = 0
 
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 1.0,
         }
 
@@ -129,7 +128,7 @@ class Test_connectivity_mask(unittest.TestCase):
         expected.values[:] = 0
 
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 1.0,
         }
 
@@ -166,7 +165,7 @@ class Test_connectivity_mask(unittest.TestCase):
         )
 
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 3.0,
         }
 
@@ -174,8 +173,8 @@ class Test_connectivity_mask(unittest.TestCase):
 
         xr.testing.assert_equal(output_xr, expected)
 
-    def test_pixel_area_conversion(self):
-        # Matches forest-baseline: 10m pixels -> pixel_area=100.
+    def test_spatial_resolution_conversion(self):
+        # Matches forest-baseline: 10m spatial_resolution.
         # 3x3 blob = 900 m^2; min 1000 m^2 -> ceil(1000/100)=10 -> mask all 9.
         input_array = np.array(
             [
@@ -191,7 +190,7 @@ class Test_connectivity_mask(unittest.TestCase):
         expected = input_xr.copy()
 
         context = {
-            "pixel_area": 100.0,
+            "spatial_resolution": 10.0,
             "min_connected_area": 1000.0,
         }
 
@@ -199,8 +198,8 @@ class Test_connectivity_mask(unittest.TestCase):
 
         xr.testing.assert_equal(output_xr, expected)
 
-    def test_pixel_area_ceil(self):
-        # ceil(250 / 100) = 3; 2-px feature masked, 3-px feature kept
+    def test_spatial_resolution_ceil(self):
+        # ceil(250 / (10*10)) = 3; 2-px feature masked, 3-px feature kept
         input_array = np.array(
             [
                 [1, 1, 1, 0, 0],
@@ -228,7 +227,7 @@ class Test_connectivity_mask(unittest.TestCase):
         )
 
         context = {
-            "pixel_area": 100.0,
+            "spatial_resolution": 10.0,
             "min_connected_area": 250.0,
         }
 
@@ -255,7 +254,7 @@ class Test_connectivity_mask(unittest.TestCase):
         )
 
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 8.0,
         }
 
@@ -303,7 +302,7 @@ class Test_connectivity_mask(unittest.TestCase):
         )
 
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 3.0,
         }
 
@@ -311,7 +310,7 @@ class Test_connectivity_mask(unittest.TestCase):
 
         xr.testing.assert_equal(output_xr, expected)
 
-    def test_pixel_area_zero(self):
+    def test_spatial_resolution_zero(self):
 
         input_array = np.array(
             [
@@ -325,27 +324,27 @@ class Test_connectivity_mask(unittest.TestCase):
         )
         input_xr = xr.DataArray(input_array, dims=["y", "x"])
         context = {
-            "pixel_area": 0.0,
+            "spatial_resolution": 0.0,
             "min_connected_area": 1.0,
         }
 
         with self.assertRaises(ValueError):
             connectivity_mask.apply_datacube(input_xr, context)
 
-    def test_pixel_area_negative(self):
+    def test_spatial_resolution_negative(self):
         input_xr = xr.DataArray(np.ones((5, 5), dtype=bool), dims=["y", "x"])
         context = {
-            "pixel_area": -1.0,
+            "spatial_resolution": -1.0,
             "min_connected_area": 1.0,
         }
 
         with self.assertRaises(ValueError):
             connectivity_mask.apply_datacube(input_xr, context)
 
-    def test_pixel_area_wrong_type(self):
+    def test_spatial_resolution_wrong_type(self):
         input_xr = xr.DataArray(np.ones((5, 5), dtype=bool), dims=["y", "x"])
         context = {
-            "pixel_area": "100",
+            "spatial_resolution": "100",
             "min_connected_area": 1.0,
         }
 
@@ -365,7 +364,7 @@ class Test_connectivity_mask(unittest.TestCase):
         )
         input_xr = xr.DataArray(input_array, dims=["y", "x"])
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": -1.0,
         }
 
@@ -376,7 +375,7 @@ class Test_connectivity_mask(unittest.TestCase):
         # Allowed by < 0 check, then fails when min_pixels = ceil(0 / pixel_area) = 0
         input_xr = xr.DataArray(np.ones((5, 5), dtype=bool), dims=["y", "x"])
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 0.0,
         }
 
@@ -386,7 +385,7 @@ class Test_connectivity_mask(unittest.TestCase):
     def test_min_connected_area_wrong_type(self):
         input_xr = xr.DataArray(np.ones((5, 5), dtype=bool), dims=["y", "x"])
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": None,
         }
 
@@ -406,7 +405,7 @@ class Test_connectivity_mask(unittest.TestCase):
         )
         input_xr = xr.DataArray(input_array, dims=["y", "x"])
         context = {
-            "pixel_area": 1.0,
+            "spatial_resolution": 1.0,
             "min_connected_area": 25,
         }
 
