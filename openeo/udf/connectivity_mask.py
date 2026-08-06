@@ -19,9 +19,10 @@ LOG_CODE = "connectivity_mask"
 
 
 class Context(TypedDict):
-    # pixel area (units: m^2)
-    # I can't find a way to access this information within the UDF
-    pixel_area: float
+    # I can't find a way to access pixel size (spatial resolution) within the UDF
+
+    # spatial resolution / linear pixel size (units: m)
+    spatial_resolution: float
 
     # min connected area (units: m^2)
     min_connected_area: float
@@ -114,11 +115,11 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
 
     # parse and validate context
 
-    pixel_area = context["pixel_area"]
-    if not isinstance(pixel_area, float | int):
-        raise TypeError("pixel_area should be a float")
-    if pixel_area <= 0:
-        raise ValueError("pixel_area should be positive")
+    spatial_resolution = context["spatial_resolution"]
+    if not isinstance(spatial_resolution, float | int):
+        raise TypeError("spatial_resolution should be a float")
+    if spatial_resolution <= 0:
+        raise ValueError("spatial_resolution should be positive")
 
     min_connected_area = context["min_connected_area"]
     if not isinstance(min_connected_area, float | int):
@@ -126,6 +127,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     if min_connected_area < 0:
         raise ValueError("min_connected_area should be positive")
 
+    pixel_area = spatial_resolution * spatial_resolution
     min_pixels = math.ceil(min_connected_area / pixel_area)
     if min_pixels < 1:
         raise ValueError("min_pixels should be at least 1")

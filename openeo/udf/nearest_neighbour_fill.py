@@ -56,6 +56,8 @@ def nearest_neighbour_fill(data: np.ndarray, mask: np.ndarray) -> np.ndarray:
     candidate_mask = np.isfinite(data) & ~mask_bool
 
     if not candidate_mask.any():
+        # just exploding here is rather abrupt, and difficult to debug.
+        # perhaps we should log a warning and fill with some fallback value?
         raise ValueError("no finite valued pixels available for replacement")
 
     # scipy.ndimage.distance_transform_edt computes, for each True pixel, the
@@ -102,12 +104,6 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     inspect(
         data=cube.sizes, message="Input cube dimensions", code=LOG_CODE, level="debug"
     )
-    nan_pct = (cube.isnull().sum().item() / cube.size) * 100
-    inspect(
-        message=f"NaNs in input cube = {nan_pct:.2f}%",
-        code=LOG_CODE,
-        level="debug",
-    )
     inspect(
         message=f"Size of cube = {format_bytes(cube.nbytes)}",
         code=LOG_CODE,
@@ -125,10 +121,25 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
         data = cube.sel(bands="data", drop=True)
     except KeyError as e:
         raise ValueError("expected a band labeled 'data'") from e
+
+    nan_pct = (data.isnull().sum().item() / data.size) * 100
+    inspect(
+        message=f"NaNs in data band = {nan_pct:.2f}%",
+        code=LOG_CODE,
+        level="debug",
+    )
+        
     try:
         mask_band = cube.sel(bands="mask", drop=True)
     except KeyError as e:
         raise ValueError("expected a band labeled 'mask'") from e
+
+    nan_pct = (mask_band.isnull().sum().item() / mask_band.size) * 100
+    inspect(
+        message=f"NaNs in mask band = {nan_pct:.2f}%",
+        code=LOG_CODE,
+        level="debug",
+    )
 
     filled_data = xr.apply_ufunc(
         nearest_neighbour_fill,
