@@ -117,10 +117,11 @@ FLATTENING_THRESHOLD = Parameter.number(
     default=0.12,
 )
 
-LOGISTIC_SSE_PERCENTILE = Parameter.number(
-    name="logistic_sse_percentile",
-    description="Exclude any pixels with Sum of Squared Errors (SSE) above this percentile. Units: fraction",
-    default=0.95,
+# `2_deforestation_tracker.ipynb` has this = 18.3, at p95 after applying all other masks.
+LOGISTIC_SSE_THRESHOLD = Parameter.number(
+    name="logistic_sse_threshold",
+    description="Exclude any pixels with Sum of Squared Errors (SSE) above this threshold. Units: dB^2",
+    default=18.3,
 )
 
 
