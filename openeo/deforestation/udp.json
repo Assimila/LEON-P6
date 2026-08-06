@@ -775,6 +775,17 @@
             "unit": "px"
           }
         ]
+      }
+    },
+    "adddimension7": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "applyneighborhood2"
+        },
+        "label": "2026-01-01T00:00:00Z",
+        "name": "t",
+        "type": "temporal"
       },
       "result": true
     }
