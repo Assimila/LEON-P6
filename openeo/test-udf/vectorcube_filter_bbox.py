@@ -16,6 +16,11 @@ BBOX_4326 = {
 
 class Test_vectorcube_filter_bbox(unittest.TestCase):
 
+    def _assert_contiguous_geometry_index(self, out_geoms, out_cube, geom_dim="geometry"):
+        expected = list(range(len(out_geoms)))
+        self.assertEqual(list(out_geoms.index), expected)
+        self.assertEqual(list(out_cube.coords[geom_dim].values), expected)
+
     def test_happy_path(self):
         # define in WGS84, then project to UTM 32N.
         # Keep clear of the bbox edges: reprojection only moves corner vertices,
@@ -51,6 +56,7 @@ class Test_vectorcube_filter_bbox(unittest.TestCase):
         self.assertTrue(out_geoms.geometry.iloc[0].equals(geometries.geometry.iloc[1]))
         self.assertEqual(out_cube.sizes["geometry"], 1)
         np.testing.assert_array_equal(out_cube.values, [20.0])
+        self._assert_contiguous_geometry_index(out_geoms, out_cube)
 
     def test_same_crs_no_reproject(self):
         outside = box(9.0, 51.0, 9.1, 51.1)
@@ -144,6 +150,7 @@ class Test_vectorcube_filter_bbox(unittest.TestCase):
         self.assertEqual(len(out_geoms), 1)
         self.assertEqual(out_cube.sizes["geometries"], 1)
         np.testing.assert_array_equal(out_cube.values, [20.0])
+        self._assert_contiguous_geometry_index(out_geoms, out_cube, geom_dim="geometries")
 
     def test_missing_geometry_dimension_raises(self):
         geometries = gpd.GeoDataFrame(
@@ -179,6 +186,7 @@ class Test_vectorcube_filter_bbox(unittest.TestCase):
 
         self.assertEqual(len(out_geoms), 0)
         self.assertEqual(out_cube.sizes["geometry"], 0)
+        self._assert_contiguous_geometry_index(out_geoms, out_cube)
 
     def test_keeps_all(self):
         a = box(8.02, 50.02, 8.08, 50.08)
@@ -205,6 +213,7 @@ class Test_vectorcube_filter_bbox(unittest.TestCase):
         self.assertEqual(len(out_geoms), 2)
         self.assertEqual(out_cube.sizes["geometry"], 2)
         np.testing.assert_array_equal(out_cube.values, [10.0, 20.0])
+        self._assert_contiguous_geometry_index(out_geoms, out_cube)
 
     def test_extra_dims(self):
         outside = box(9.0, 51.0, 9.1, 51.1)
@@ -237,6 +246,37 @@ class Test_vectorcube_filter_bbox(unittest.TestCase):
         self.assertEqual(out_cube.sizes["time"], 2)
         self.assertEqual(out_cube.sizes["bands"], 2)
         np.testing.assert_array_equal(out_cube.values, [[[20.0, 20.0], [20.0, 20.0]]])
+        self._assert_contiguous_geometry_index(out_geoms, out_cube)
+
+    def test_resets_noncontiguous_index(self):
+        outside_a = box(9.0, 51.0, 9.1, 51.1)
+        inside = box(8.02, 50.02, 8.08, 50.08)
+        outside_b = box(7.0, 49.0, 7.1, 49.1)
+        feature_index = [1316, 1319, 1400]
+
+        geometries = gpd.GeoDataFrame(
+            {"shapeName": ["A", "Kabwoya", "C"]},
+            geometry=[outside_a, inside, outside_b],
+            crs="EPSG:4326",
+            index=feature_index,
+        )
+        cube = xr.DataArray(
+            np.array([10.0, 20.0, 30.0]),
+            dims=["geometry"],
+            coords={"geometry": feature_index},
+        )
+        context = {"spatial_extent": BBOX_4326}
+
+        out_geoms, out_cube = vectorcube_filter_bbox.apply_vectorcube(
+            geometries, cube, context
+        )
+
+        self.assertEqual(len(out_geoms), 1)
+        self.assertEqual(list(out_geoms.index), [0])
+        self.assertEqual(list(out_cube.coords["geometry"].values), [0])
+        self.assertTrue(out_geoms.geometry.iloc[0].equals(inside))
+        self.assertEqual(out_geoms["shapeName"].iloc[0], "Kabwoya")
+        np.testing.assert_array_equal(out_cube.values, [20.0])
 
     def test_geometries_crs_none_defaults_4326(self):
         outside = box(9.0, 51.0, 9.1, 51.1)

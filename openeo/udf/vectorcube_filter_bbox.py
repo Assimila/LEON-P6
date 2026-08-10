@@ -80,9 +80,13 @@ def apply_vectorcube(
         level="info",
     )
 
-    geometries = geometries.loc[keep]
+    # Series of bool
+    keep_labels = geometries.index[keep]
+    # Reindex
+    # This is necessary because openEO makes some assumptions that the table index is exactly positional.
+    geometries = geometries.loc[keep].reset_index(drop=True)
 
-    # now remove an data from `cube` for the geometries that we dropped
+    # now remove any data from `cube` for the geometries that we dropped
 
     if "geometry" in cube.dims:
         geom_dim = "geometry"
@@ -91,6 +95,7 @@ def apply_vectorcube(
     else:
         raise ValueError(f"Cube has no geometry dimension; dims={cube.dims}")
 
-    cube = cube.sel({geom_dim: geometries.index})
+    cube = cube.sel({geom_dim: keep_labels})
+    cube = cube.assign_coords({geom_dim: geometries.index})
 
     return geometries, cube
