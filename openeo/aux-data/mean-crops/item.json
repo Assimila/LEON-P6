@@ -1,0 +1,144 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
+    "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+    "https://stac-extensions.github.io/eo/v1.1.0/schema.json"
+  ],
+  "id": "meancrops_24-25-float32.tif",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          30.550355339978747,
+          1.0708816501988816
+        ],
+        [
+          31.223013824727445,
+          1.0708816501988816
+        ],
+        [
+          31.223013824727445,
+          1.546988750782228
+        ],
+        [
+          30.550355339978747,
+          1.546988750782228
+        ],
+        [
+          30.550355339978747,
+          1.0708816501988816
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    30.550355339978747,
+    1.0708816501988816,
+    31.223013824727445,
+    1.546988750782228
+  ],
+  "properties": {
+    "proj:epsg": 4326,
+    "proj:geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            30.550355339978747,
+            1.0708816501988816
+          ],
+          [
+            31.223013824727445,
+            1.0708816501988816
+          ],
+          [
+            31.223013824727445,
+            1.546988750782228
+          ],
+          [
+            30.550355339978747,
+            1.546988750782228
+          ],
+          [
+            30.550355339978747,
+            1.0708816501988816
+          ]
+        ]
+      ]
+    },
+    "proj:bbox": [
+      30.550355339978747,
+      1.0708816501988816,
+      31.223013824727445,
+      1.546988750782228
+    ],
+    "proj:shape": [
+      5300,
+      7488
+    ],
+    "proj:transform": [
+      8.983152841195215e-05,
+      0.0,
+      30.550355339978747,
+      0.0,
+      -8.983152841195215e-05,
+      1.546988750782228,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "description": "Mean cropland probability for 2024\u20132025, derived from Google Dynamic World (GOOGLE/DYNAMICWORLD/V1). Dynamic World provides near real-time 10 m land-cover probabilities from Sentinel-2; this layer is the temporal mean of the `crops` band over the period 2024-01-01 to 2025-12-31 for the Bugoma / LEON-P6 AOI. Pixel values are probabilities in [0, 1]. Users typically apply a threshold (e.g. > 0.1) to identify cropland for KPI analysis of forest-to-crop conversion.",
+    "datetime": "2024-01-01T00:00:00Z"
+  },
+  "links": [],
+  "assets": {
+    "asset": {
+      "href": "meancrops_24-25-float32.tif",
+      "type": "image/tiff; application=geotiff",
+      "raster:bands": [
+        {
+          "data_type": "float32",
+          "scale": 1.0,
+          "offset": 0.0,
+          "sampling": "area",
+          "statistics": {
+            "mean": 0.09615588933229446,
+            "minimum": 0.02348227985203266,
+            "maximum": 0.5345420837402344,
+            "stddev": 0.08125278353691101,
+            "valid_percent": 0.00013469827586206896
+          },
+          "histogram": {
+            "count": 11,
+            "min": 0.02348227985203266,
+            "max": 0.5345420837402344,
+            "buckets": [
+              402305,
+              92995,
+              104637,
+              80493,
+              41714,
+              15076,
+              4105,
+              915,
+              152,
+              8
+            ]
+          }
+        }
+      ],
+      "eo:bands": [
+        {
+          "name": "crops",
+          "description": "Mean cropland probability (Dynamic World, 2024\u20132025)"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    }
+  }
+}
