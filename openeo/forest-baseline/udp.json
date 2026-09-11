@@ -6,6 +6,9 @@
         "bands": [
           "B0"
         ],
+        "featureflags": {
+          "apply_raster_scale_and_offset": true
+        },
         "spatial_extent": {
           "from_parameter": "spatial_extent"
         },
@@ -13,7 +16,7 @@
           "2020-01-01",
           "2020-01-02"
         ],
-        "url": "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural-forest-float32/item.json"
+        "url": "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural-forest/item.json"
       }
     },
     "dropdimension1": {
