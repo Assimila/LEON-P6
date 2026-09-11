@@ -3,8 +3,7 @@
   "stac_version": "1.1.0",
   "stac_extensions": [
     "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
-    "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
-    "https://stac-extensions.github.io/eo/v1.1.0/schema.json"
+    "https://stac-extensions.github.io/raster/v2.0.0/schema.json"
   ],
   "id": "Natural_forest_2020_bugom_32636.tif",
   "geometry": {
@@ -98,44 +97,16 @@
     "asset": {
       "href": "Natural_forest_2020_bugom_32636.tif",
       "type": "image/tiff; application=geotiff",
-      "raster:bands": [
-        {
-          "data_type": "uint8",
-          "scale": 1.0,
-          "offset": 0.0,
-          "sampling": "area",
-          "statistics": {
-            "mean": 39.55167452931568,
-            "minimum": 0,
-            "maximum": 245,
-            "stddev": 77.9145061328889,
-            "valid_percent": 0.0001343277166437414
-          },
-          "histogram": {
-            "count": 11,
-            "min": 0.0,
-            "max": 245.0,
-            "buckets": [
-              564845,
-              27867,
-              16095,
-              11306,
-              9885,
-              8162,
-              7213,
-              6237,
-              15737,
-              77101
-            ]
-          }
-        }
-      ],
-      "eo:bands": [
+      "bands": [
         {
           "name": "B0",
-          "description": "Natural forest probabilities (scaled to [0-250])."
+          "description": "Natural forest probabilities (scaled to [0-250]).",
+          "data_type": "uint8",
+          "nodata": 255
         }
       ],
+      "raster:scale": 0.004,
+      "raster:offset": 0.0,
       "roles": [
         "data"
       ]
