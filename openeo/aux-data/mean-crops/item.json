@@ -90,7 +90,7 @@
       0.0,
       1.0
     ],
-    "description": "Mean cropland probability for 2024\u20132025, derived from Google Dynamic World (GOOGLE/DYNAMICWORLD/V1). Dynamic World provides near real-time 10 m land-cover probabilities from Sentinel-2; this layer is the temporal mean of the `crops` band over the period 2024-01-01 to 2025-12-31 for the Bugoma / LEON-P6 AOI. Pixel values are probabilities in [0, 1]. Users typically apply a threshold (e.g. > 0.1) to identify cropland for KPI analysis of forest-to-crop conversion.",
+    "description": "Mean cropland probability for 2024-2025, derived from Google Dynamic World (GOOGLE/DYNAMICWORLD/V1). This layer is the temporal mean of the `crops` band. Pixel values are probabilities in [0, 1].",
     "datetime": "2024-01-01T00:00:00Z"
   },
   "links": [],
@@ -133,7 +133,7 @@
       "eo:bands": [
         {
           "name": "crops",
-          "description": "Mean cropland probability (Dynamic World, 2024\u20132025)"
+          "description": "Mean cropland probability (Dynamic World, 2024-2025)"
         }
       ],
       "roles": [
