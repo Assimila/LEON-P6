@@ -1,0 +1,5 @@
+output*/
+*.tif
+*.nc
+logs.json
+s3cfg.txt
