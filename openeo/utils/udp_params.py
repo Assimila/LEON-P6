@@ -6,10 +6,10 @@ import numpy as np
 from openeo.api.process import Parameter
 
 spatial_extent = {
-    "west": 30.5503711040000994,
-    "south": 1.0709279050000799,
-    "east": 31.2229521229999989,
-    "north": 1.5469373050000299,
+    "west": 30.55,
+    "south": 1.07,
+    "east": 31.23,
+    "north": 1.55,
 }
 
 SPATIAL_EXTENT = Parameter.spatial_extent(default=spatial_extent)
@@ -124,6 +124,11 @@ LOGISTIC_SSE_THRESHOLD = Parameter.number(
     default=18.3,
 )
 
+CROPLAND_PROBABILITY_THRESHOLD = Parameter.number(
+    name="cropland_probability_threshold",
+    description="Threshold for cropland probability, above which a pixel is considered cropland. Units: fraction",
+    default=0.1,
+)
 
 # outputs from other UDPs
 
@@ -137,12 +142,20 @@ FOREST_BASELINE_DATACUBE = Parameter.datacube(
     ),
 )
 
-
 SENTINEL_1_DATACUBE = Parameter.datacube(
     name="sentinel_1_datacube",
     description=(
         "The Sentinel-1 datacube to process. "
         "Dimensions: [bands, y, x]. "
         "Bands: [min_sse, min_sse_t, sd, p05, p95]. "
+    ),
+)
+
+DECIMAL_YEAR_OF_DEFORESTATION_DATACUBE = Parameter.datacube(
+    name="decimal_year_of_deforestation_datacube",
+    description=(
+        "The decimal year of deforestation datacube to process. "
+        "Dimensions: [bands, y, x]. "
+        "Bands: [data]. "
     ),
 )
