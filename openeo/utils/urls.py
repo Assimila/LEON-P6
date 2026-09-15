@@ -1,0 +1,20 @@
+# TODO: update this to permanent location
+NATURAL_FOREST_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural-forest/item.json"
+
+# TODO: update this to permanent location
+MEAN_CROPS_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/mean-crops/item.json"
+
+# TODO: point to main branch once merged
+FOREST_BASELINE_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/forest-baseline/udp.json"
+
+# TODO: point to main branch once merged
+S1_PROCESSING_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/s1-processing/udp.json"
+
+# TODO: point to main branch once merged
+DEFORESTATION_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/deforestation/udp.json"
+
+# TODO: point to main branch once merged
+KPIS_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/kpis/udp.json"
+
+# TODO: point to main branch once merged
+END_TO_END_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/end-to-end/udp.json"
