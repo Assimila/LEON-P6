@@ -4,415 +4,10 @@
       "process_id": "filter_bbox",
       "arguments": {
         "data": {
-          "from_parameter": "forest_baseline_datacube"
-        },
-        "extent": {
-          "from_parameter": "spatial_extent"
-        }
-      }
-    },
-    "filterbbox2": {
-      "process_id": "filter_bbox",
-      "arguments": {
-        "data": {
           "from_parameter": "decimal_year_of_deforestation_datacube"
         },
         "extent": {
           "from_parameter": "spatial_extent"
-        }
-      }
-    },
-    "resamplecubespatial1": {
-      "process_id": "resample_cube_spatial",
-      "arguments": {
-        "data": {
-          "from_node": "filterbbox1"
-        },
-        "method": "near",
-        "target": {
-          "from_node": "filterbbox2"
-        }
-      }
-    },
-    "renamelabels1": {
-      "process_id": "rename_labels",
-      "arguments": {
-        "data": {
-          "from_node": "resamplecubespatial1"
-        },
-        "dimension": "bands",
-        "target": [
-          "forest_stock_baseline_ha"
-        ]
-      }
-    },
-    "reducedimension1": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "filterbbox2"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement1": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "data"
-              }
-            },
-            "gte1": {
-              "process_id": "gte",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement1"
-                },
-                "y": 2020
-              }
-            },
-            "lt1": {
-              "process_id": "lt",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement1"
-                },
-                "y": 2021
-              }
-            },
-            "and1": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "gte1"
-                },
-                "y": {
-                  "from_node": "lt1"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension1": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension1"
-        },
-        "label": "deforestation_2020_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes1": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "renamelabels1"
-        },
-        "cube2": {
-          "from_node": "adddimension1"
-        }
-      }
-    },
-    "reducedimension2": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "filterbbox2"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement2": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "data"
-              }
-            },
-            "gte2": {
-              "process_id": "gte",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement2"
-                },
-                "y": 2021
-              }
-            },
-            "lt2": {
-              "process_id": "lt",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement2"
-                },
-                "y": 2022
-              }
-            },
-            "and2": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "gte2"
-                },
-                "y": {
-                  "from_node": "lt2"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension2": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension2"
-        },
-        "label": "deforestation_2021_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes2": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes1"
-        },
-        "cube2": {
-          "from_node": "adddimension2"
-        }
-      }
-    },
-    "reducedimension3": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "filterbbox2"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement3": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "data"
-              }
-            },
-            "gte3": {
-              "process_id": "gte",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement3"
-                },
-                "y": 2022
-              }
-            },
-            "lt3": {
-              "process_id": "lt",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement3"
-                },
-                "y": 2023
-              }
-            },
-            "and3": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "gte3"
-                },
-                "y": {
-                  "from_node": "lt3"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension3": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension3"
-        },
-        "label": "deforestation_2022_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes3": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes2"
-        },
-        "cube2": {
-          "from_node": "adddimension3"
-        }
-      }
-    },
-    "reducedimension4": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "filterbbox2"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement4": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "data"
-              }
-            },
-            "gte4": {
-              "process_id": "gte",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement4"
-                },
-                "y": 2023
-              }
-            },
-            "lt4": {
-              "process_id": "lt",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement4"
-                },
-                "y": 2024
-              }
-            },
-            "and4": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "gte4"
-                },
-                "y": {
-                  "from_node": "lt4"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension4": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension4"
-        },
-        "label": "deforestation_2023_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes4": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes3"
-        },
-        "cube2": {
-          "from_node": "adddimension4"
-        }
-      }
-    },
-    "reducedimension5": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "filterbbox2"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement5": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "data"
-              }
-            },
-            "gte5": {
-              "process_id": "gte",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement5"
-                },
-                "y": 2024
-              }
-            },
-            "lt5": {
-              "process_id": "lt",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement5"
-                },
-                "y": 2025
-              }
-            },
-            "and5": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "gte5"
-                },
-                "y": {
-                  "from_node": "lt5"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension5": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension5"
-        },
-        "label": "deforestation_2024_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes5": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes4"
-        },
-        "cube2": {
-          "from_node": "adddimension5"
         }
       }
     },
@@ -437,7 +32,7 @@
         "name": "t"
       }
     },
-    "resamplecubespatial2": {
+    "resamplecubespatial1": {
       "process_id": "resample_cube_spatial",
       "arguments": {
         "data": {
@@ -445,7 +40,7 @@
         },
         "method": "near",
         "target": {
-          "from_node": "filterbbox2"
+          "from_node": "filterbbox1"
         }
       }
     },
@@ -456,7 +51,7 @@
           "crops"
         ],
         "data": {
-          "from_node": "resamplecubespatial2"
+          "from_node": "resamplecubespatial1"
         }
       }
     },
@@ -499,7 +94,7 @@
         "data_type": "bool"
       }
     },
-    "reducedimension6": {
+    "reducedimension1": {
       "process_id": "reduce_dimension",
       "arguments": {
         "data": {
@@ -508,7 +103,7 @@
         "dimension": "bands",
         "reducer": {
           "process_graph": {
-            "arrayelement6": {
+            "arrayelement1": {
               "process_id": "array_element",
               "arguments": {
                 "data": {
@@ -522,473 +117,57 @@
         }
       }
     },
-    "adddimension6": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension6"
-        },
-        "label": "cropland_mask",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "adddimension7": {
+    "adddimension1": {
       "process_id": "add_dimension",
       "arguments": {
         "data": {
           "from_node": "reducedimension1"
         },
-        "label": "deforestation_2020",
+        "label": "cropland",
         "name": "bands",
         "type": "bands"
       }
     },
-    "mergecubes6": {
+    "mergecubes1": {
       "process_id": "merge_cubes",
       "arguments": {
         "cube1": {
-          "from_node": "adddimension6"
+          "from_node": "filterbbox1"
         },
         "cube2": {
-          "from_node": "adddimension7"
+          "from_node": "adddimension1"
         }
       }
     },
-    "adddimension8": {
-      "process_id": "add_dimension",
+    "applydimension1": {
+      "process_id": "apply_dimension",
       "arguments": {
         "data": {
-          "from_node": "reducedimension2"
-        },
-        "label": "deforestation_2021",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes7": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes6"
-        },
-        "cube2": {
-          "from_node": "adddimension8"
-        }
-      }
-    },
-    "adddimension9": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension3"
-        },
-        "label": "deforestation_2022",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes8": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes7"
-        },
-        "cube2": {
-          "from_node": "adddimension9"
-        }
-      }
-    },
-    "adddimension10": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension4"
-        },
-        "label": "deforestation_2023",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes9": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes8"
-        },
-        "cube2": {
-          "from_node": "adddimension10"
-        }
-      }
-    },
-    "adddimension11": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension5"
-        },
-        "label": "deforestation_2024",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes10": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes9"
-        },
-        "cube2": {
-          "from_node": "adddimension11"
-        }
-      }
-    },
-    "reducedimension7": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "mergecubes10"
+          "from_node": "mergecubes1"
         },
         "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement7": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "cropland_mask"
-              }
-            },
-            "arrayelement8": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "deforestation_2020"
-              }
-            },
-            "and6": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement7"
-                },
-                "y": {
-                  "from_node": "arrayelement8"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension12": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension7"
-        },
-        "label": "forest_loss_to_cropland_2020_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes11": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes5"
-        },
-        "cube2": {
-          "from_node": "adddimension12"
-        }
-      }
-    },
-    "reducedimension8": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "mergecubes10"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement9": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "cropland_mask"
-              }
-            },
-            "arrayelement10": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "deforestation_2021"
-              }
-            },
-            "and7": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement9"
-                },
-                "y": {
-                  "from_node": "arrayelement10"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension13": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension8"
-        },
-        "label": "forest_loss_to_cropland_2021_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes12": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes11"
-        },
-        "cube2": {
-          "from_node": "adddimension13"
-        }
-      }
-    },
-    "reducedimension9": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "mergecubes10"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement11": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "cropland_mask"
-              }
-            },
-            "arrayelement12": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "deforestation_2022"
-              }
-            },
-            "and8": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement11"
-                },
-                "y": {
-                  "from_node": "arrayelement12"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension14": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension9"
-        },
-        "label": "forest_loss_to_cropland_2022_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes13": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes12"
-        },
-        "cube2": {
-          "from_node": "adddimension14"
-        }
-      }
-    },
-    "reducedimension10": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "mergecubes10"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement13": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "cropland_mask"
-              }
-            },
-            "arrayelement14": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "deforestation_2023"
-              }
-            },
-            "and9": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement13"
-                },
-                "y": {
-                  "from_node": "arrayelement14"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension15": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension10"
-        },
-        "label": "forest_loss_to_cropland_2023_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes14": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes13"
-        },
-        "cube2": {
-          "from_node": "adddimension15"
-        }
-      }
-    },
-    "reducedimension11": {
-      "process_id": "reduce_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "mergecubes10"
-        },
-        "dimension": "bands",
-        "reducer": {
-          "process_graph": {
-            "arrayelement15": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "cropland_mask"
-              }
-            },
-            "arrayelement16": {
-              "process_id": "array_element",
-              "arguments": {
-                "data": {
-                  "from_parameter": "data"
-                },
-                "label": "deforestation_2024"
-              }
-            },
-            "and10": {
-              "process_id": "and",
-              "arguments": {
-                "x": {
-                  "from_node": "arrayelement15"
-                },
-                "y": {
-                  "from_node": "arrayelement16"
-                }
-              },
-              "result": true
-            }
-          }
-        }
-      }
-    },
-    "adddimension16": {
-      "process_id": "add_dimension",
-      "arguments": {
-        "data": {
-          "from_node": "reducedimension11"
-        },
-        "label": "forest_loss_to_cropland_2024_ha",
-        "name": "bands",
-        "type": "bands"
-      }
-    },
-    "mergecubes15": {
-      "process_id": "merge_cubes",
-      "arguments": {
-        "cube1": {
-          "from_node": "mergecubes14"
-        },
-        "cube2": {
-          "from_node": "adddimension16"
-        }
-      }
-    },
-    "apply2": {
-      "process_id": "apply",
-      "arguments": {
-        "data": {
-          "from_node": "mergecubes15"
-        },
         "process": {
           "process_graph": {
             "runudf2": {
               "process_id": "run_udf",
               "arguments": {
                 "context": {
+                  "years": [
+                    2020,
+                    2021,
+                    2022,
+                    2023,
+                    2024
+                  ],
                   "spatial_resolution": {
                     "from_parameter": "spatial_resolution"
                   }
                 },
                 "data": {
-                  "from_parameter": "x"
+                  "from_parameter": "data"
                 },
                 "runtime": "Python",
-                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport xarray as xr\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"pixel_area_ha\"\n\n# 1 ha = 10000 m^2\nM2_PER_HA = 10000\n\n\nclass Context(TypedDict):\n    # I can't find a way to access pixel size (spatial resolution) within the UDF\n\n    # spatial resolution / linear pixel size (units: m)\n    spatial_resolution: float\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Convert a pixel mask to pixel area (units: ha), based on spatial resolution.\n\n    Why not just use native openEO processes?\n    Because there seems to be a bug related to Parameters.\n    https://forum.dataspace.copernicus.eu/t/udp-parameter-not-applied/5282/3\n\n    Arguments:\n        cube: xarray DataArray\n            A pixel mask (0 / 1). Values are multiplied by the pixel area.\n        context: user-provided arguments.\n    \"\"\"\n    spatial_resolution = context[\"spatial_resolution\"]\n    if not isinstance(spatial_resolution, float | int):\n        raise TypeError(\"spatial_resolution should be a float\")\n    if spatial_resolution <= 0:\n        raise ValueError(\"spatial_resolution should be positive\")\n\n    pixel_area_ha = spatial_resolution * spatial_resolution / M2_PER_HA\n\n    inspect(\n        message=(\n            f\"converting mask to area: spatial_resolution = {spatial_resolution} m, \"\n            f\"pixel_area = {pixel_area_ha} ha\"\n        ),\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    return cube * pixel_area_ha\n",
+                "udf": "\"\"\"\nThis is an openEO UDF (User Defined Function).\nhttps://open-eo.github.io/openeo-python-client/udf.html\n\nIt targets the \"python\" runtime, version 3.11.\nhttps://openeofed.dataspace.copernicus.eu/?discover=0&udf-runtime=Python\n\"\"\"\n\nfrom typing import TypedDict\n\nimport numpy as np\nimport xarray as xr\nfrom openeo.metadata import CollectionMetadata\n\nfrom openeo.udf import inspect\n\nLOG_CODE = \"raster_kpis\"\n\n# 1 ha = 10000 m^2\nM2_PER_HA = 10000\n\n\nclass Context(TypedDict):\n    # calendar years to emit deforestation / forest-loss-to-cropland bands for\n    years: list[int]\n\n    # I can't find a way to access pixel size (spatial resolution) within the UDF\n\n    # spatial resolution / linear pixel size (units: m)\n    spatial_resolution: float\n\n\ndef format_bytes(bytes_val: float) -> str:\n    for unit in [\"B\", \"KB\", \"MB\", \"GB\", \"TB\"]:\n        if bytes_val < 1024:\n            return f\"{bytes_val:.2f} {unit}\"\n        bytes_val /= 1024\n    return f\"{bytes_val:.2f} PB\"\n\n\ndef parse_years(years) -> list[int]:\n    if not isinstance(years, list | tuple):\n        raise TypeError(\"years should be a list\")\n    if len(years) == 0:\n        raise ValueError(\"years should not be empty\")\n\n    for year in years:\n        if not isinstance(year, int):\n            raise TypeError(f\"Invalid year: {year}\")\n\n    if len(years) != len(set(years)):\n        raise ValueError(\"years should be unique\")\n\n    return years\n\n\ndef parse_spatial_resolution(spatial_resolution) -> float:\n    if not isinstance(spatial_resolution, float | int):\n        raise TypeError(\"spatial_resolution should be a float\")\n    if spatial_resolution <= 0:\n        raise ValueError(\"spatial_resolution should be positive\")\n    return float(spatial_resolution)\n\n\ndef output_band_names(years: list[int]) -> list[str]:\n    names = [\"forest_stock_baseline_ha\"]\n    for y in years:\n        names.append(f\"deforestation_{y}_ha\")\n        names.append(f\"forest_loss_to_cropland_{y}_ha\")\n    return names\n\n\ndef as_mask(mask: xr.DataArray) -> xr.DataArray:\n    \"\"\"\n    Truthy finite = on. NaN and 0 are off.\n    \"\"\"\n    return np.isfinite(mask) & (mask != 0)\n\n\ndef apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:\n    \"\"\"\n    Convert year-of-deforestation, forest baseline, and cropland masks into\n    raster KPI layers (units: ha).\n\n    The input cube must have 3 bands labeled:\n        - \"year_of_deforestation\": decimal year\n        - \"forest_baseline\": 0/1 mask (NaN treated as 0)\n        - \"cropland\": 0/1 mask (NaN treated as 0)\n\n    Arguments:\n        cube: xarray DataArray\n            Should have a \"bands\" dimension with the labels above.\n        context: user-provided arguments.\n\n    Returns:\n        DataArray with bands:\n            forest_stock_baseline_ha,\n            deforestation_{year}_ha for each context year,\n            forest_loss_to_cropland_{year}_ha for each context year.\n    \"\"\"\n    inspect(\n        data=cube.sizes, message=\"Input cube dimensions\", code=LOG_CODE, level=\"debug\"\n    )\n    inspect(\n        message=f\"Size of cube = {format_bytes(cube.nbytes)}\",\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    years = parse_years(context[\"years\"])\n    spatial_resolution = parse_spatial_resolution(context[\"spatial_resolution\"])\n    pixel_area_ha = spatial_resolution * spatial_resolution / M2_PER_HA\n\n    inspect(\n        message=(\n            f\"years = {years}, spatial_resolution = {spatial_resolution} m, \"\n            f\"pixel_area = {pixel_area_ha} ha\"\n        ),\n        code=LOG_CODE,\n        level=\"debug\",\n    )\n\n    if \"bands\" not in cube.dims:\n        raise ValueError(\"cube must have a bands dimension\")\n\n\n    year_of_deforestation = cube.sel(bands=\"year_of_deforestation\", drop=True)\n    forest_baseline = cube.sel(bands=\"forest_baseline\", drop=True)\n    forest_baseline_mask = as_mask(forest_baseline)\n    cropland = cube.sel(bands=\"cropland\", drop=True)\n    cropland_mask = as_mask(cropland)\n\n    layers: list[xr.DataArray] = [forest_baseline_mask]\n    for y in years:\n        deforestation_y = (year_of_deforestation >= y) & (year_of_deforestation < (y + 1))\n        layers.append(deforestation_y)\n        forest_loss_to_cropland_y = (deforestation_y & cropland_mask)\n        layers.append(forest_loss_to_cropland_y)\n\n    names = output_band_names(years)\n    return xr.concat(layers, dim=\"bands\").assign_coords(bands=names) * pixel_area_ha\n\n\ndef apply_metadata(metadata: CollectionMetadata, context: Context) -> CollectionMetadata:\n    \"\"\"\n    Returns the expected cube metadata, after applying this UDF, based on input metadata.\n    \"\"\"\n    years = parse_years(context[\"years\"])\n    names = output_band_names(years)\n    # source=None replaces the whole band list, including a change of length.\n    return metadata.rename_labels(dimension=\"bands\", target=names)\n",
                 "version": "3.11"
               },
               "result": true
@@ -1004,7 +183,7 @@
         "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbHumanitarian/UGA/ADM4/geoBoundaries-UGA-ADM4.geojson"
       }
     },
-    "applydimension1": {
+    "applydimension2": {
       "process_id": "apply_dimension",
       "arguments": {
         "context": {
@@ -1043,10 +222,10 @@
       "process_id": "aggregate_spatial",
       "arguments": {
         "data": {
-          "from_node": "apply2"
+          "from_node": "applydimension1"
         },
         "geometries": {
-          "from_node": "applydimension1"
+          "from_node": "applydimension2"
         },
         "reducer": {
           "process_graph": {
@@ -1067,7 +246,7 @@
   },
   "id": "KPIs",
   "summary": "Forect loss KPIs",
-  "description": "Aggregate forest-stock and deforestation KPIs by Uganda ADM-4 administrative unit, from a forest baseline mask and a decimal-year deforestation cube. 1. Spatially filter ADM-4 boundaries, the forest baseline, and the deforestation cube to the requested extent, then resample the baseline onto the deforestation grid. 2. Load cropland probability, resample it onto the same grid, and threshold it into a cropland mask. 3. Build annual deforestation masks (2020-2024) and the subset of those pixels that overlap cropland. 4. Convert each pixel mask to area in hectares and sum over ADM-4 geometries. The returned vector cube contains forest-stock baseline, annual forest loss, and annual forest-loss-to-cropland areas (ha) per administrative unit.",
+  "description": "Aggregate forest-stock and deforestation KPIs by Uganda ADM-4 administrative unit, from a forest baseline mask and a decimal-year deforestation cube. 1. Spatially filter ADM-4 boundaries, and the deforestation cube to the requested extent. 2. Load cropland probability, resample it onto the same grid, and threshold it into a cropland mask. 3. Build annual deforestation masks (2020-2024) and the subset of those pixels that overlap cropland. 4. Convert each pixel mask to area in hectares and sum over ADM-4 geometries. The returned vector cube contains forest-stock baseline, annual forest loss, and annual forest-loss-to-cropland areas (ha) per administrative unit.",
   "returns": {
     "description": "A vector cube, with columns (bands) for each KPI",
     "schema": {
@@ -1077,16 +256,8 @@
   },
   "parameters": [
     {
-      "name": "forest_baseline_datacube",
-      "description": "The forest baseline datacube to process. This is a pixel mask, where 1 = natural forest. Dimensions: [bands, y, x]. Bands: [B0]. ",
-      "schema": {
-        "type": "object",
-        "subtype": "datacube"
-      }
-    },
-    {
       "name": "decimal_year_of_deforestation_datacube",
-      "description": "The decimal year of deforestation datacube to process. Dimensions: [bands, y, x]. Bands: [data]. ",
+      "description": "The decimal year of deforestation datacube to process. Dimensions: [bands, y, x]. Bands: [year_of_deforestation, forest_baseline]. ",
       "schema": {
         "type": "object",
         "subtype": "datacube"

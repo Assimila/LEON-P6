@@ -156,6 +156,6 @@ DECIMAL_YEAR_OF_DEFORESTATION_DATACUBE = Parameter.datacube(
     description=(
         "The decimal year of deforestation datacube to process. "
         "Dimensions: [bands, y, x]. "
-        "Bands: [data]. "
+        "Bands: [year_of_deforestation, forest_baseline]. "
     ),
 )
