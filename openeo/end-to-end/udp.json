@@ -101,7 +101,7 @@
       "result": true
     }
   },
-  "id": "KPIs",
+  "id": "End-to-end forest-loss KPIs",
   "summary": "End-to-end forest-loss KPIs",
   "description": "Detect deforestation from Sentinel-1 and aggregate forest-change KPIs by Uganda ADM-4 administrative unit. 1. Construct a 2020 natural-forest baseline. 2. Process Sentinel-1 backscatter and fit a logistic curve per pixel. 3. Detect the decimal year of deforestation. 4. Sum forest-stock, annual forest-loss, and forest-loss-to-cropland areas (ha) over ADM-4 geometries. The returned vector cube contains those KPIs per administrative unit.",
   "returns": {
