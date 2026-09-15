@@ -145,6 +145,12 @@ update the environment
 conda env update -f environment.yml
 ```
 
+## install nbstripout as git filter
+
+```bash
+nbstripout --install
+```
+
 # run unit tests
 
 for the UDFs
