@@ -777,15 +777,39 @@
         ]
       }
     },
-    "adddimension7": {
-      "process_id": "add_dimension",
+    "renamelabels2": {
+      "process_id": "rename_labels",
       "arguments": {
         "data": {
           "from_node": "applyneighborhood2"
         },
-        "label": "2026-01-01T00:00:00Z",
-        "name": "t",
-        "type": "temporal"
+        "dimension": "bands",
+        "target": [
+          "year_of_deforestation"
+        ]
+      }
+    },
+    "renamelabels3": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "resamplecubespatial1"
+        },
+        "dimension": "bands",
+        "target": [
+          "forest_baseline"
+        ]
+      }
+    },
+    "mergecubes5": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "renamelabels2"
+        },
+        "cube2": {
+          "from_node": "renamelabels3"
+        }
       },
       "result": true
     }
