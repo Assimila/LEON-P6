@@ -15,3 +15,6 @@ DEFORESTATION_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/hea
 
 # TODO: point to main branch once merged
 KPIS_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/kpis/udp.json"
+
+# TODO: point to main branch once merged
+END_TO_END_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/end-to-end/udp.json"
