@@ -74,15 +74,6 @@ After `aggregate_spatial`, it is not possible to do much with the resulting vect
 Carefully prepare a raster datacube, with band labels set in advance.
 After `aggregate_spatial` no further processing is possible.
 
-## Chaining UDPs with intermediate results fails
-
-https://forum.dataspace.copernicus.eu/t/error-chaining-upds/5528
-
-### Workaround
-
-None.
-Cannot check intermediate results.
-
 ## Vector outputs do not support `filename_prefix`
 
 Vector outputs will overwrite each other.
@@ -113,3 +104,14 @@ Use Parquet instead.
 ### Workaround
 
 First, `merge_cubes` into a single datacube, then band-math on the stacked cube. 
+
+# Fixed 🎉
+
+## Chaining UDPs with intermediate results fails
+
+https://forum.dataspace.copernicus.eu/t/error-chaining-upds/5528
+
+### Workaround
+
+None.
+Cannot check intermediate results.
