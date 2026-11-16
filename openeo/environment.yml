@@ -30,4 +30,5 @@ dependencies:
   - rio-cogeo
   - s3cmd
   - nbstripout
+  - earthengine-api
 prefix: /home/sam/miniconda3/envs/LEON-P6
