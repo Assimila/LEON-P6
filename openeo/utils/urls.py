@@ -1,20 +1,23 @@
-# TODO: update this to permanent location
-NATURAL_FOREST_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural-forest/item.json"
+from urllib.parse import urljoin
 
 # TODO: update this to permanent location
-MEAN_CROPS_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/mean-crops/item.json"
+NATURAL_FOREST_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural-forests-2020/STAC/collection.json"
 
-# TODO: point to main branch once merged
-FOREST_BASELINE_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/forest-baseline/udp.json"
+# TODO: update this to permanent location
+MEAN_CROPS_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/mean-crops-24-25/STAC/collection.json"
 
-# TODO: point to main branch once merged
-S1_PROCESSING_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/s1-processing/udp.json"
+# TODO: point to branch: main
+# TODO: point this back to branch: openeo
+GIT_REPO = "Assimila/LEON-P6"
+GIT_BRANCH = "scale-aux-data"
 
-# TODO: point to main branch once merged
-DEFORESTATION_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/deforestation/udp.json"
+GIT_BASE = urljoin(
+    "https://raw.githubusercontent.com/",
+    f"{GIT_REPO}/refs/heads/{GIT_BRANCH}/",
+)
 
-# TODO: point to main branch once merged
-KPIS_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/kpis/udp.json"
-
-# TODO: point to main branch once merged
-END_TO_END_UDP = "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/end-to-end/udp.json"
+FOREST_BASELINE_UDP = urljoin(GIT_BASE, "openeo/forest-baseline/udp.json")
+S1_PROCESSING_UDP = urljoin(GIT_BASE, "openeo/s1-processing/udp.json")
+DEFORESTATION_UDP = urljoin(GIT_BASE, "openeo/deforestation/udp.json")
+KPIS_UDP = urljoin(GIT_BASE, "openeo/kpis/udp.json")
+END_TO_END_UDP = urljoin(GIT_BASE, "openeo/end-to-end/udp.json")
