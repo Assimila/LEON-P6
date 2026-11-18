@@ -16,7 +16,7 @@
           "from_parameter": "spatial_extent"
         }
       },
-      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/forest-baseline/udp.json"
+      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/scale-aux-data/openeo/forest-baseline/udp.json"
     },
     "s1logisticprocessing1": {
       "process_id": "s1_logistic_processing",
@@ -49,7 +49,7 @@
           "from_parameter": "speckle_filter_temporal_window"
         }
       },
-      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/s1-processing/udp.json"
+      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/scale-aux-data/openeo/s1-processing/udp.json"
     },
     "deforestation1": {
       "process_id": "deforestation",
@@ -79,7 +79,7 @@
           "from_parameter": "temporal_variability_threshold"
         }
       },
-      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/deforestation/udp.json"
+      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/scale-aux-data/openeo/deforestation/udp.json"
     },
     "KPIs1": {
       "process_id": "KPIs",
@@ -97,7 +97,7 @@
           "from_parameter": "spatial_resolution"
         }
       },
-      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/openeo/openeo/kpis/udp.json",
+      "namespace": "https://raw.githubusercontent.com/Assimila/LEON-P6/refs/heads/scale-aux-data/openeo/kpis/udp.json",
       "result": true
     }
   },
