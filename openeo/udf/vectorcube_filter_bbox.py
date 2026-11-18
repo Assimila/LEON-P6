@@ -80,6 +80,13 @@ def apply_vectorcube(
         level="info",
     )
 
+    if n_keep == 0:
+        inspect(
+            message="No geometries found within bbox",
+            code=LOG_CODE,
+            level="error",
+        )
+
     # Series of bool
     keep_labels = geometries.index[keep]
     # Reindex

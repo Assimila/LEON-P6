@@ -816,7 +816,7 @@
   },
   "id": "deforestation",
   "summary": "Detect decimal year of deforestation",
-  "description": "Detect the decimal year of deforestation from a forest baseline mask and pre-processed Sentinel-1 logistic-fit statistics. 1. Spatially filter and resample the forest baseline onto the Sentinel-1 grid. 2. Build quality masks for temporal variability (sd), backscatter flattening, and logistic-fit SSE, then combine them with the forest baseline into a deforestation event mask. 3. Apply that mask to the best-fit event time band (min_sse_t). 4. Identify remaining forest patches below the minimum connected area and fill those pixels from nearest valid neighbours. The returned DataCube has no time dimension and contains the masked decimal-year deforestation timing (float).",
+  "description": "Detect the decimal year of deforestation from a forest baseline mask and pre-processed Sentinel-1 logistic-fit statistics. 1. Spatially filter and resample the forest baseline onto the Sentinel-1 grid. 2. Build quality masks for temporal variability (sd), backscatter flattening, and logistic-fit SSE, then combine them with the forest baseline into a deforestation event mask. 3. Apply that mask to the best-fit event time band (min_sse_t). 4. Identify remaining forest patches below the minimum connected area and fill those pixels from nearest valid neighbours. Returns a DataCube with 2 bands: year_of_deforestation (decimal year), forest_baseline (pixel mask).",
   "returns": {
     "description": "A DataCube with dtype float",
     "schema": {

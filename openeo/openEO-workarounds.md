@@ -4,29 +4,6 @@ Here we document workarounds that we had to implement to circumvent bugs or defi
 
 Each item is a TODO: delete the workaround from our code once the backend supports the native process.
 
-## `load_stac` / job results STAC nodata
-
-It is currently not possible to express to the backend "there is no nodata encoding".
-
-- https://forum.dataspace.copernicus.eu/t/load-stac-configure-nodata/5267
-
-Job results STAC does not encode `dtype` and `nodata`,
-so the next `load_stac_from_job` imposes a default nodata value of 0.
-
-- https://forum.dataspace.copernicus.eu/t/round-trip-nodata/5512
-
-Valid zeros become NaN, and "empty" tiles are then optimised away by the backend.
-This creates strange "missing tile" artifacts.
-
-- https://forum.dataspace.copernicus.eu/t/apply-neighborhood-skips-tiles/5277
-
-### Workarounds
-
-Natural-forest STAC is written with nodata=255.
-
-Natural-forest `load_stac` opts into scale/offset via an undocumented
-feature flag `"apply_raster_scale_and_offset"`.
-
 ## UDP parameters ignored in band math
 
 Native comparisons (`>`, `>=`, `<=`) and arithmetic do not apply UDP
@@ -41,6 +18,21 @@ A custom UDF `udf/binary_operator.py` in every UDP that thresholds a parameter.
 Used in place of quick native band math.
 
 Inline scripts use native `>` / `>=` / `<=` because they have concrete numbers.
+
+## Nodata tiling artifacts
+
+When loading data the backend can drop tiles which are entirely nodata.
+Unfortunately this optimisation can create tiling artifacts, due to inconsistent handling of pixels.
+
+https://forum.dataspace.copernicus.eu/t/nodata-tiling-artifacts/5732
+
+### Workaround
+
+Apply a feature flag to the load-data node, to prevent the backend from dropping nodata tiles.
+
+```python
+cube.result_node().update_arguments(featureflags={"retain_nodata_tiles": True})
+```
 
 ## `not` / invert after `merge_cubes`
 
@@ -111,7 +103,18 @@ First, `merge_cubes` into a single datacube, then band-math on the stacked cube.
 
 https://forum.dataspace.copernicus.eu/t/error-chaining-upds/5528
 
-### Workaround
+## `load_stac` / job results STAC nodata
 
-None.
-Cannot check intermediate results.
+It is currently not possible to express to the backend "there is no nodata encoding".
+
+- https://forum.dataspace.copernicus.eu/t/load-stac-configure-nodata/5267
+
+Job results STAC does not encode `dtype` and `nodata`,
+so the next `load_stac_from_job` imposes a default nodata value of 0.
+
+- https://forum.dataspace.copernicus.eu/t/round-trip-nodata/5512
+
+Valid zeros become NaN, and "empty" tiles are then optimised away by the backend.
+This creates strange "missing tile" artifacts.
+
+- https://forum.dataspace.copernicus.eu/t/apply-neighborhood-skips-tiles/5277

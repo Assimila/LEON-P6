@@ -1,0 +1,1 @@
+Mean cropland probability for 2024-2025, derived from Google Dynamic World (GOOGLE/DYNAMICWORLD/V1). This layer is the temporal mean of the `crops` band. Pixel values are probabilities in [0, 1].
