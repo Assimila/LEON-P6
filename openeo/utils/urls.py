@@ -7,9 +7,8 @@ NATURAL_FOREST_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/natural
 MEAN_CROPS_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/mean-crops-24-25/STAC/collection.json"
 
 # TODO: point to branch: main
-# TODO: point this back to branch: openeo
 GIT_REPO = "Assimila/LEON-P6"
-GIT_BRANCH = "scale-aux-data"
+GIT_BRANCH = "openeo"
 
 GIT_BASE = urljoin(
     "https://raw.githubusercontent.com/",
