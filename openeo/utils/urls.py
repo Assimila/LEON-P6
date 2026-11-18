@@ -8,7 +8,7 @@ MEAN_CROPS_STAC = "https://s3.waw3-2.cloudferro.com/swift/v1/leon-p6/mean-crops-
 
 # TODO: point to branch: main
 GIT_REPO = "Assimila/LEON-P6"
-GIT_BRANCH = "openeo"
+GIT_BRANCH = "openeo-on-main"
 
 GIT_BASE = urljoin(
     "https://raw.githubusercontent.com/",
