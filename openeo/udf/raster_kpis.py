@@ -123,7 +123,6 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
     if "bands" not in cube.dims:
         raise ValueError("cube must have a bands dimension")
 
-
     year_of_deforestation = cube.sel(bands="year_of_deforestation", drop=True)
     forest_baseline = cube.sel(bands="forest_baseline", drop=True)
     forest_baseline_mask = as_mask(forest_baseline)
