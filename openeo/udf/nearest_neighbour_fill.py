@@ -56,9 +56,11 @@ def nearest_neighbour_fill(data: np.ndarray, mask: np.ndarray) -> np.ndarray:
     candidate_mask = np.isfinite(data) & ~mask_bool
 
     if not candidate_mask.any():
-        # just exploding here is rather abrupt, and difficult to debug.
-        # perhaps we should log a warning and fill with some fallback value?
-        raise ValueError("no finite valued pixels available for replacement")
+        # The window has patches to fill but no finite deforestation year.
+        # A larger forest cut by the neighbourhood edge looks like a small
+        # patch here, while the rest of it is still forest in the next window.
+        # Leave the year as NaN so those pixels stay forest.
+        return data.copy()
 
     # scipy.ndimage.distance_transform_edt computes, for each True pixel, the
     # Euclidean distance to the nearest False pixel.
@@ -91,7 +93,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
             NaN (nodata) is ignored - those pixels are left unchanged.
 
     If there are masked pixels, but no finite valued pixels in the data band,
-    raise an error.
+    return the data unchanged.
 
     Arguments:
         cube: xarray DataArray
@@ -128,7 +130,7 @@ def apply_datacube(cube: xr.DataArray, context: Context) -> xr.DataArray:
         code=LOG_CODE,
         level="debug",
     )
-        
+
     try:
         mask_band = cube.sel(bands="mask", drop=True)
     except KeyError as e:

@@ -49,6 +49,17 @@ MIN_CONNECTED_AREA = Parameter.number(
     default=10000,
 )
 
+NEIGHBORHOOD_OVERLAP = Parameter.number(
+    name="neighborhood_overlap",
+    description=(
+        "Overlap of the area filter and the nearest-neighbour fill. Units: pixels. "
+        "Set this to ceil(min_connected_area / spatial_resolution^2) "
+        "so a patch of the minimum area is not split by a window edge. "
+        "The default, 12, is that value at 30 m and 10000 m^2."
+    ),
+    default=12,
+)
+
 S1_ORBIT_STATE = Parameter.string(
     name="orbit_state",
     description="The orbit state to process (ascending, descending)",

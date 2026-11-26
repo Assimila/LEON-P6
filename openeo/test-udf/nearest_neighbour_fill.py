@@ -134,15 +134,20 @@ class Test_nearest_neighbour_fill(unittest.TestCase):
 
         xr.testing.assert_equal(output_xr, expected)
 
-    def test_no_candidates_raises(self):
-        data = np.zeros((2, 2))
-        mask = np.ones((2, 2))
+    def test_no_candidates_leaves_data_unchanged(self):
+        """A window with patches to fill but no finite year stays forest."""
+        data = np.array([[np.nan, np.nan], [np.nan, 2021.5]])
+        mask = np.array([[1.0, 1.0], [1.0, 1.0]])
         input_xr = make_cube(data, mask)
+        expected = xr.DataArray(
+            np.stack([data]),
+            dims=["bands", "y", "x"],
+            coords={"bands": ["data"]},
+        )
 
-        with self.assertRaisesRegex(
-            ValueError, "no finite valued pixels available for replacement"
-        ):
-            nearest_neighbour_fill.apply_datacube(input_xr, {})
+        output_xr = nearest_neighbour_fill.apply_datacube(input_xr, {})
+
+        xr.testing.assert_equal(output_xr, expected)
 
     def test_wrong_band_count_raises(self):
         input_xr = xr.DataArray(
